@@ -30,7 +30,7 @@ const UpdateOrder = async ({
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/UpdateOrders",
+      "https://api.hukmee.in/APIs/APIs.asmx/UpdateOrders",
       formData.toString(), // convert form data to string
       {
         headers: {

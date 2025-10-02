@@ -23,7 +23,7 @@ const RegisterUser = async (
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/RegisterVendors",
+      "https://api.hukmee.in/APIs/APIs.asmx/RegisterVendors",
       formData,
       {
         headers: {

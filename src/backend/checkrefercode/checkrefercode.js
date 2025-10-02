@@ -8,7 +8,7 @@ const CheckReferCode = async (refer, phone) => {
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/UpdateReferCode",
+      "https://api.hukmee.in/APIs/APIs.asmx/UpdateReferCode",
       formData,
       {
         headers: {

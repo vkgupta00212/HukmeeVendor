@@ -12,7 +12,7 @@ const InsertAddress = async (Name, Phone, Address, City, Pincode) => {
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/InsertAddresss",
+      "https://api.hukmee.in/APIs/APIs.asmx/InsertAddresss",
       formData,
       {
         headers: {

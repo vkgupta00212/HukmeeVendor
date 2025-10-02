@@ -30,7 +30,7 @@ const InsertOrder = async ({
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/InsertOrders",
+      "https://api.hukmee.in/APIs/APIs.asmx/InsertOrders",
       formData.toString(), // convert form data to string
       {
         headers: {

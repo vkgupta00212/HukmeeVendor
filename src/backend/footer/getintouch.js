@@ -30,7 +30,7 @@ const GetInTouch = async () => {
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/ShowGetinTouch",
+      "https://api.hukmee.in/APIs/APIs.asmx/ShowGetinTouch",
       formData,
       {
         headers: {

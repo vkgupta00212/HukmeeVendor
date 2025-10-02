@@ -25,7 +25,7 @@ const GetReferDetailsh = async (phone) => {
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/GetReferCode",
+      "https://api.hukmee.in/APIs/APIs.asmx/GetReferCode",
       formData,
       {
         headers: {

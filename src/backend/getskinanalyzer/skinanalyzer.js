@@ -29,7 +29,7 @@ const GetSkinAnalyzer = async () => {
   formData.append("token", "SWNCMPMSREMXAMCKALVAALI");
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/ShowSkinlyzer",
+      "https://api.hukmee.in/APIs/APIs.asmx/ShowSkinlyzer",
       formData,
       {
         headers: {

@@ -101,7 +101,8 @@ const RegisterPage = () => {
 
       if (result) {
         alert("Registered successfully!");
-        navigate("/"); // Redirect after success
+        navigate("/");
+        window.location.reload();
       } else {
         alert("Registration failed, please try again.");
       }

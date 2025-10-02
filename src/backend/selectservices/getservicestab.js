@@ -24,7 +24,7 @@ const GetServicesTab = async (Id) => {
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/GetTabs",
+      "https://api.hukmee.in/APIs/APIs.asmx/GetTabs",
       formData,
       {
         headers: {

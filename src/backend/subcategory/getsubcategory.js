@@ -30,7 +30,7 @@ const GetSubCategory = async (Id, Type) => {
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/OffersService",
+      "https://api.hukmee.in/APIs/APIs.asmx/OffersService",
       formData,
       {
         headers: {

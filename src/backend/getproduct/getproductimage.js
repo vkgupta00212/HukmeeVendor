@@ -23,7 +23,7 @@ const GetProductImage = async (productId) => {
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/ShowProductImages",
+      "https://api.hukmee.in/APIs/APIs.asmx/ShowProductImages",
       formData,
       {
         headers: {

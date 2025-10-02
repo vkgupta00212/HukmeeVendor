@@ -2,7 +2,7 @@ import axios from "axios";
 
 const DeleteOrder = async (ID) => {
   try {
-    const url = "https://api.weprettify.com/APIs/APIs.asmx/Deleteorder";
+    const url = "https://api.hukmee.in/APIs/APIs.asmx/Deleteorder";
 
     const formData = new URLSearchParams();
     formData.append("token", "SWNCMPMSREMXAMCKALVAALI");

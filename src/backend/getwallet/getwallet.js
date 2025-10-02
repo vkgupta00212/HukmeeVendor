@@ -23,7 +23,7 @@ const GetWallet = async (phone) => {
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/ShowWalletVendors",
+      "https://api.hukmee.in/APIs/APIs.asmx/ShowWalletVendors",
       formData,
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );

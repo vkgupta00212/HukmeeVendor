@@ -38,7 +38,7 @@ const GetSpecialforyou = async () => {
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/SpeciallyForYou",
+      "https://api.hukmee.in/APIs/APIs.asmx/SpeciallyForYou",
       formData,
       {
         headers: {

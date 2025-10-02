@@ -24,7 +24,7 @@ const GetProduct = async () => {
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/ShowProducts",
+      "https://api.hukmee.in/APIs/APIs.asmx/ShowProducts",
       formData,
       {
         headers: {

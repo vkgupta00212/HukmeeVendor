@@ -39,7 +39,7 @@ const GetProductReviews = async (productId) => {
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/ShowProductReviews",
+      "https://api.hukmee.in/APIs/APIs.asmx/ShowProductReviews",
       formData,
       {
         headers: {

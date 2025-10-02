@@ -10,7 +10,7 @@ const WePretiffyVendor = async (Name, Mobile, Message, Type) => {
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/Want",
+      "https://api.hukmee.in/APIs/APIs.asmx/Want",
       formData,
       {
         headers: {

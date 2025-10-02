@@ -60,7 +60,7 @@ const GetOrder = async (UserID, Status) => {
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/GetOrder",
+      "https://api.hukmee.in/APIs/APIs.asmx/GetOrder",
       formData,
       {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },

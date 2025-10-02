@@ -28,7 +28,7 @@ const GetMenServices = async () => {
 
   try {
     const response = await axios.post(
-      "https://api.weprettify.com/APIs/APIs.asmx/GetMenServices",
+      "https://api.hukmee.in/APIs/APIs.asmx/GetMenServices",
       formData,
       {
         headers: {
