@@ -7,20 +7,15 @@ import {
   FaTimes,
   FaEllipsisV,
 } from "react-icons/fa";
-import AddressDetails from "./addressDetailsh.jsx";
 import PersonalDetails from "./personalDetailsh.jsx";
-import ReferAndEarn from "./refer&earn.jsx";
 import GetUser from "../../backend/authentication/getuser.js";
 import TermsPage from "./terms&condition.jsx";
 import AboutUs from "./aboutus.jsx";
 import PrivacyAndPolicy from "./privacy&policy.jsx";
-import EnterReferCode from "./enterrefercode.jsx";
 import { useNavigate } from "react-router-dom";
 import LoginCard from "./loginCard.jsx";
 import OtpVerification from "./otpverification.jsx";
-import RegisterUser from "../../backend/authentication/register.js";
-import MyOrder from "./myorders.jsx";
-import TabBar from "../vendor/tab.jsx"; // Import TabBar
+import UpdateVendor from "../../backend/authentication/updatevendor.js";
 import COLORS from "../core/constant";
 
 const useWindowSize = () => {
@@ -237,6 +232,7 @@ const UserProfile = () => {
       alert("⚠️ Please select an image before saving.");
       return;
     }
+    console.log("image is ", base64Image);
 
     setIsUploading(true);
     setProgress(0);
@@ -252,15 +248,7 @@ const UserProfile = () => {
     }, 200);
 
     try {
-      const res = await RegisterUser(
-        base64Image,
-        "Edit Profile Image",
-        "",
-        phone,
-        "",
-        "",
-        ""
-      );
+      const res = await UpdateVendor("", "", phone, "", "", base64Image);
 
       if (res) {
         setProgress(100);
@@ -275,7 +263,7 @@ const UserProfile = () => {
           setPreview(null);
           if (fileInputRef.current) fileInputRef.current.value = "";
         }, 500);
-        window.location.reload();
+        // window.location.reload();
       } else {
         alert("❌ Failed to update image.");
       }
@@ -299,10 +287,9 @@ const UserProfile = () => {
 
   const sections = [
     { id: 1, title: "Personal Details", Component: <PersonalDetails /> },
-    { id: 2, title: "Saved Addresses", Component: <AddressDetails /> },
-    { id: 3, title: "About Us", Component: <AboutUs /> },
-    { id: 4, title: "Terms & Conditions", Component: <TermsPage /> },
-    { id: 5, title: "Privacy Policy", Component: <PrivacyAndPolicy /> },
+    { id: 2, title: "About Us", Component: <AboutUs /> },
+    { id: 3, title: "Terms & Conditions", Component: <TermsPage /> },
+    { id: 4, title: "Privacy Policy", Component: <PrivacyAndPolicy /> },
   ];
 
   // Animation variants
@@ -535,21 +522,21 @@ const UserProfile = () => {
                   >
                     <button
                       onClick={handleLogout}
-                      className={`w-full text-left px-4 py-2 text-sm ${COLORS.textMuted} hover:bg-blue-50 hover:text-blue-600 transition-colors`} // No exact match for hover colors, using fallback
+                      className={`w-full text-left px-4 py-2 text-sm ${COLORS.textMuted} hover:bg-orange-50 hover:text-${COLORS.primaryMain} transition-colors`} // No exact match for hover colors, using fallback
                       aria-label="Log out"
                     >
                       Logout
                     </button>
                     <button
                       onClick={() => setShowMenu(false)}
-                      className={`w-full text-left px-4 py-2 text-sm ${COLORS.textMuted} hover:bg-blue-50 hover:text-blue-600 transition-colors`} // No exact match for hover colors
+                      className={`w-full text-left px-4 py-2 text-sm ${COLORS.textMuted} hover:bg-orange-50 hover:text-${COLORS.primaryMain} transition-colors`} // No exact match for hover colors
                       aria-label="Settings"
                     >
                       Settings
                     </button>
                     <button
                       onClick={() => setShowMenu(false)}
-                      className={`w-full text-left px-4 py-2 text-sm ${COLORS.textMuted} hover:bg-blue-50 hover:text-blue-600 transition-colors`} // No exact match for hover colors
+                      className={`w-full text-left px-4 py-2 text-sm ${COLORS.textMuted} hover:bg-orange-50 hover:text-${COLORS.primaryMain} transition-colors`} // No exact match for hover colors
                       aria-label="Help"
                     >
                       Help
@@ -575,8 +562,8 @@ const UserProfile = () => {
           >
             <img
               src={
-                user[0]?.Image
-                  ? `https://api.weprettify.com/Images/${user[0].Image}`
+                user[0]?.VenImg
+                  ? `https://api.hukmee.in/Images/${user[0].VenImg}`
                   : "https://via.placeholder.com/150?text=Avatar"
               }
               alt={user[0]?.fullname || "Profile"}

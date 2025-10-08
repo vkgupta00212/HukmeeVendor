@@ -8,6 +8,8 @@ class GetUserModel {
     phoneNumber,
     dob,
     verified,
+    Address,
+    VenImg,
     aadharFront,
     aadharBack
   ) {
@@ -17,6 +19,8 @@ class GetUserModel {
     this.phoneNumber = phoneNumber;
     this.dob = dob;
     this.verified = verified;
+    this.Address = Address;
+    this.VenImg = VenImg;
     this.aadharFront = aadharFront;
     this.aadharBack = aadharBack;
   }
@@ -29,6 +33,8 @@ class GetUserModel {
       json.Phone || "",
       json.Dob || "",
       json.Verified || "",
+      json.Address || "",
+      json.VenImg || "",
       json.aadharFront || "",
       json.aadharBack || ""
     );

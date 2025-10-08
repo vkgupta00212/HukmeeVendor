@@ -8,6 +8,8 @@ import DeclinedScreen from "../component/vendor/declinedscreen";
 import COLORS from "../component/core/constant";
 import LoginCard from "../component/ui/loginCard.jsx";
 import OtpVerification from "../component/ui/otpverification.jsx";
+import GetUser from "../backend/authentication/getuser.js";
+import VendorVerification from "../component/ui/verification.jsx";
 
 const useWindowSize = () => {
   const [windowSize, setWindowSize] = useState({ width: undefined });
@@ -27,11 +29,13 @@ const Index = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
+  const [user, setUser] = useState([]);
   const loginModalRef = useRef(null);
   const otpModalRef = useRef(null);
   const { width } = useWindowSize();
   const [pendingPhone, setPendingPhone] = useState("");
   const isMobile = width < 640;
+  const mobile = localStorage.getItem("userPhone");
 
   const renderContent = () => {
     switch (selectedTab) {
@@ -62,6 +66,20 @@ const Index = () => {
     }
     return () => document.body.classList.remove("overflow-hidden");
   }, [showLoginModal, showOtpModal]);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const data = await GetUser(mobile);
+        console.log("user have fetched from the index", data);
+        setUser(data || []);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    };
+
+    if (mobile) fetchUser();
+  }, [mobile]);
 
   useEffect(() => {
     if (!showLoginModal || !loginModalRef.current) return;
@@ -289,23 +307,29 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <section className="relative bg-white p-4">
-        {/* Tab bar with change handler */}
-        <TabBar onTabChange={setSelectedTab} />
+    <>
+      {user[0]?.verified === "approved" ? (
+        <div className="min-h-screen bg-gray-50">
+          <section className="relative bg-white p-4">
+            {/* Tab bar with change handler */}
+            <TabBar onTabChange={setSelectedTab} />
 
-        {/* Render the selected tab's content */}
-        <div className="mt-6">
-          <Suspense fallback={<div>Loading...</div>}>
-            {renderContent()}
-          </Suspense>
+            {/* Render the selected tab's content */}
+            <div className="mt-6">
+              <Suspense fallback={<div>Loading...</div>}>
+                {renderContent()}
+              </Suspense>
+            </div>
+          </section>
+
+          <footer className="mt-8 bg-gray-100 z-10 md:hidden">
+            <Footer />
+          </footer>
         </div>
-      </section>
-
-      <footer className="mt-8 bg-gray-100 z-10 md:hidden">
-        <Footer />
-      </footer>
-    </div>
+      ) : (
+        <VendorVerification />
+      )}
+    </>
   );
 };
 

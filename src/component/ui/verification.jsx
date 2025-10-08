@@ -115,7 +115,7 @@ const VendorVerification = () => {
               Your vendor registration is under review. Our team will verify
               your documents within 24-48 hours.
             </p>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            {/* <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
               <div className="flex items-center justify-center space-x-2 mb-2">
                 <Clock className="w-4 h-4 text-yellow-600" />
                 <span className="text-sm font-medium text-yellow-800">
@@ -142,7 +142,7 @@ const VendorVerification = () => {
               >
                 Contact Support
               </button>
-            </div>
+            </div> */}
           </div>
         );
     }

@@ -1,15 +1,6 @@
-// backend/authentication/register.js
 import axios from "axios";
 
-const RegisterUser = async (
-  Fullname,
-  Email,
-  Phone,
-  Dob,
-  Address,
-  AdharFront,
-  AdharBack
-) => {
+const UpdateVendor = async (Fullname, Email, Phone, Dob, Address, VenImg) => {
   const formData = new URLSearchParams();
   formData.append("token", "SWNCMPMSREMXAMCKALVAALI");
   formData.append("FullName", Fullname || "");
@@ -17,14 +8,12 @@ const RegisterUser = async (
   formData.append("Phone", Phone || "");
   formData.append("Dob", Dob || "");
   formData.append("Verified", "");
-  formData.append("VenImg", "");
-  formData.append("Address", Address);
-  formData.append("aadharFront", AdharFront || "");
-  formData.append("aadharBack", AdharBack || "");
+  formData.append("Address", Address || "");
+  formData.append("VenImg", VenImg || "");
 
   try {
     const response = await axios.post(
-      "https://api.hukmee.in/APIs/APIs.asmx/RegisterVendors",
+      "https://api.hukmee.in/APIs/APIs.asmx/UpdateVendorProfile",
       formData,
       {
         headers: {
@@ -34,9 +23,7 @@ const RegisterUser = async (
     );
     return response.data;
   } catch (error) {
-    console.error("Register Error:", error);
-    return null;
+    console.error("Update Error:", error);
   }
 };
-
-export default RegisterUser;
+export default UpdateVendor;

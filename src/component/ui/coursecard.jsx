@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, color } from "framer-motion";
 import GetServicePack from "../../backend/servicepack/getservicepack";
+import Colors from "../core/constant";
 
 // Package Card Component
 const PackageCardItem = ({
@@ -32,7 +33,9 @@ const PackageCardItem = ({
           className="w-full h-40 sm:h-48 md:h-52 lg:h-56 object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
         />
-        <div className="absolute top-2 right-2 bg-indigo-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow-sm">
+        <div
+          className={`absolute top-2 right-2 bg-${Colors.primaryMain} text-white px-2 py-1 rounded-full text-xs font-medium shadow-sm`}
+        >
           {duration}
         </div>
         {discountfee && (
@@ -48,7 +51,7 @@ const PackageCardItem = ({
         </h2>
 
         <div className="flex items-center gap-2 text-sm font-medium">
-          <span className="text-indigo-600 text-base font-bold">
+          <span className={`text-${Colors.primaryMain} text-base font-bold`}>
             ₹{discountfee || fees}
           </span>
           {discountfee && (
@@ -58,7 +61,7 @@ const PackageCardItem = ({
 
         <motion.button
           onClick={handleJoinClick}
-          className="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-sm hover:shadow-md"
+          className={`w-full px-4 py-2 bg-${Colors.primaryMain} text-white text-sm font-medium rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-sm hover:shadow-md`}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           aria-label={`Join ${servicename} course`}
@@ -103,7 +106,7 @@ const CourseCard = () => {
   };
 
   return (
-    <section className="w-full bg-gradient-to-b from-blue-50 to-gray-50 p-5 ">
+    <section className={`w-full bg-orange-50 p-5 `}>
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           variants={headerVariants}
@@ -114,7 +117,6 @@ const CourseCard = () => {
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-gray-900 mb-6 md:mb-8 text-left tracking-tight">
             Explore Our Courses
           </h1>
-          <div className="w-24 h-1 bg-indigo-600 rounded-full mb-8" />
         </motion.div>
 
         <AnimatePresence>

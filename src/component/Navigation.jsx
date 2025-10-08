@@ -203,8 +203,8 @@ const Navigation = () => {
                   >
                     <img
                       src={
-                        user[0]?.Image
-                          ? `https://api.weprettify.com/images/${user[0].Image}`
+                        user[0]?.VenImg
+                          ? `https://api.hukmee.in/images/${user[0].VenImg}`
                           : "https://via.placeholder.com/150?text=Avatar"
                       }
                       alt={user[0]?.fullname || "Profile"}
@@ -225,34 +225,36 @@ const Navigation = () => {
                     <div className="absolute right-0 mt-3 bg-white shadow-xl rounded-xl w-56 z-50 text-sm border border-gray-100 transform transition-all duration-300 scale-95 origin-top-right animate-in">
                       <Link
                         to="/userprofile"
-                        className="block px-5 py-3 hover:bg-orange-50 hover:text-indigo-600 transition-colors duration-200 text-gray-700 first:rounded-t-xl"
+                        className={`block px-5 py-3 hover:bg-orange-50 hover:text-${Colors.primaryMain} transition-colors duration-200 text-gray-700 first:rounded-t-xl`}
                       >
                         My Profile
                       </Link>
                       <Link
                         to="/vendorverification"
-                        className="flex justify-between block px-5 py-3 hover:bg-indigo-50 hover:text-indigo-600 transition-colors duration-200 text-gray-700 first:rounded-t-xl"
+                        className={`flex justify-between block px-5 py-3 hover:bg-orange-50 hover:text-${Colors.primaryMain} transition-colors duration-200 text-gray-700 first:rounded-t-xl`}
                       >
                         <span>Verification</span>
                       </Link>
                       <Link
                         to="/transactions"
-                        className="flex justify-between items-center px-5 py-3 hover:bg-indigo-50 hover:text-indigo-600 transition-colors duration-200 text-gray-700 first:rounded-t-xl"
+                        className={`flex justify-between items-center px-5 py-3 hover:bg-orange-50 hover:text-${Colors.primaryMain} transition-colors duration-200 text-gray-700 first:rounded-t-xl`}
                       >
                         <span>Wallet</span>
-                        <span className="font-semibold text-indigo-600">
+                        <span
+                          className={`font-semibold text-${Colors.primaryMain}`}
+                        >
                           ₹{wallet[0]?.WalletBalance || 0}
                         </span>
                       </Link>
                       <Link
                         to="/contact"
-                        className="flex justify-between block px-5 py-3 hover:bg-indigo-50 hover:text-indigo-600 transition-colors duration-200 text-gray-700 first:rounded-t-xl"
+                        className={`flex justify-between block px-5 py-3 hover:bg-orange-50 hover:text-${Colors.primaryMain} transition-colors duration-200 text-gray-700 first:rounded-t-xl`}
                       >
                         <span>Contact</span>
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="block w-full text-left px-5 py-3 hover:bg-indigo-50 hover:text-indigo-600 transition-colors duration-200 text-red-500 last:rounded-b-xl"
+                        className={`block w-full text-left px-5 py-3 hover:bg-orange-50 hover:text-${Colors.primaryMain} transition-colors duration-200 text-red-500 last:rounded-b-xl`}
                       >
                         Logout
                       </button>

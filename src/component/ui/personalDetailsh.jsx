@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { FaEdit, FaTimes, FaSave } from "react-icons/fa";
 import GetUser from "../../backend/authentication/getuser";
-import RegisterUser from "../../backend/authentication/register";
+import UpdateVendor from "../../backend/authentication/updatevendor";
 
 const PersonalDetails = () => {
   const number = localStorage.getItem("userPhone") || "";
@@ -15,7 +15,7 @@ const PersonalDetails = () => {
     { label: "Name", key: "fullname", editable: true },
     { label: "Mobile No.", key: "phoneNumber", editable: false },
     { label: "Email Id", key: "email", editable: true },
-    { label: "Gender", key: "Gender", editable: true },
+    { label: "Address", key: "Address", editable: true },
     { label: "Date of Birth", key: "dob", editable: true },
   ];
 
@@ -54,14 +54,12 @@ const PersonalDetails = () => {
     }
 
     try {
-      const res = await RegisterUser(
-        "", // image
-        "Edit Profile", // type
+      const res = await UpdateVendor(
         editedDetails.Fullname, // fullname
-        editedDetails.PhoneNumber, // phone
         editedDetails.Email, // email
-        editedDetails.Gender, // gender
-        editedDetails.DOB // dob
+        editedDetails.PhoneNumber, // phone
+        editedDetails.DOB, // dob
+        editedDetails.Address // address
       );
 
       if (res) {

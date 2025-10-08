@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import RegisterUser from "../../backend/authentication/register";
+import Color from "../core/constant";
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
@@ -17,6 +18,8 @@ const RegisterPage = () => {
   const formRef = useRef(null);
   const navigate = useNavigate();
   const phone = localStorage.getItem("userPhone");
+  const [aadhaarFrontBase64, setAadhaarFrontBase64] = useState("");
+  const [aadhaarBackBase64, setAadhaarBackBase64] = useState("");
 
   // Focus trap for accessibility
   useEffect(() => {
@@ -57,10 +60,23 @@ const RegisterPage = () => {
     const { name, files } = e.target;
     if (files && files[0]) {
       const file = files[0];
-      setFormData((prev) => ({ ...prev, [name]: file }));
       const previewUrl = URL.createObjectURL(file);
-      if (name === "aadhaarFront") setPreviewFront(previewUrl);
-      if (name === "aadhaarBack") setPreviewBack(previewUrl);
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64String = reader.result.replace(
+          /^data:image\/[a-zA-Z]+;base64,/,
+          ""
+        );
+        if (name === "aadhaarFront") {
+          setPreviewFront(previewUrl);
+          setAadhaarFrontBase64(base64String);
+        } else if (name === "aadhaarBack") {
+          setPreviewBack(previewUrl);
+          setAadhaarBackBase64(base64String);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -84,7 +100,6 @@ const RegisterPage = () => {
       setErrors(validationErrors);
       return;
     }
-    setErrors({});
 
     try {
       const result = await RegisterUser(
@@ -93,8 +108,8 @@ const RegisterPage = () => {
         phone,
         "",
         formData.address,
-        "",
-        ""
+        aadhaarFrontBase64, // <-- Front Image Base64
+        aadhaarBackBase64 // <-- Back Image Base64
       );
 
       console.log("Register API Response:", result);
@@ -127,7 +142,9 @@ const RegisterPage = () => {
         </button>
 
         {/* Title */}
-        <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-6">
+        <h2
+          className={`text-2xl sm:text-3xl font-bold bg-${Color.primaryMain} bg-clip-text text-transparent mb-6`}
+        >
           Register
         </h2>
 
@@ -135,7 +152,9 @@ const RegisterPage = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-indigo-600">
+            <label
+              className={`block text-sm font-medium text-${Color.primaryMain}`}
+            >
               Name
             </label>
             <input
@@ -153,7 +172,9 @@ const RegisterPage = () => {
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-indigo-600">
+            <label
+              className={`block text-sm font-medium text-${Color.primaryMain}`}
+            >
               Email
             </label>
             <input
@@ -171,7 +192,9 @@ const RegisterPage = () => {
 
           {/* Address */}
           <div>
-            <label className="block text-sm font-medium text-indigo-600">
+            <label
+              className={`block text-sm font-medium text-${Color.primaryMain}`}
+            >
               Address
             </label>
             <textarea
@@ -189,7 +212,9 @@ const RegisterPage = () => {
 
           {/* Aadhaar Front */}
           <div>
-            <label className="block text-sm font-medium text-indigo-600">
+            <label
+              className={`block text-sm font-medium text-${Color.primaryMain}`}
+            >
               Aadhaar Front Image
             </label>
             <input
@@ -213,7 +238,9 @@ const RegisterPage = () => {
 
           {/* Aadhaar Back */}
           <div>
-            <label className="block text-sm font-medium text-indigo-600">
+            <label
+              className={`block text-sm font-medium text-${Color.primaryMain}`}
+            >
               Aadhaar Back Image
             </label>
             <input
@@ -238,7 +265,7 @@ const RegisterPage = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold shadow-md hover:shadow-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300"
+            className={`w-full py-3 bg-${Color.primaryMain} text-white rounded-lg font-semibold shadow-md hover:shadow-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300`}
           >
             Register
           </button>
