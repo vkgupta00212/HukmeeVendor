@@ -7,49 +7,59 @@ import PendingScreen from "../component/vendor/pendingscreen";
 import DeclinedScreen from "../component/vendor/declinedscreen";
 import COLORS from "../component/core/constant";
 import LoginCard from "../component/ui/loginCard.jsx";
+import Popupcard from "../component/vendor/popupcard.jsx";
 import OtpVerification from "../component/ui/otpverification.jsx";
 import GetUser from "../backend/authentication/getuser.js";
 import VendorVerification from "../component/ui/verification.jsx";
+import UpdateCurrentLocations from "../backend/updatelocation/updatelocation.js";
+import ShowLeads from "../backend/order/showleads.js"; // ✅ Correct import
 
+// Hook to track window size
 const useWindowSize = () => {
   const [windowSize, setWindowSize] = useState({ width: undefined });
   useEffect(() => {
-    const handleResize = () => {
-      setWindowSize({ width: window.innerWidth });
-    };
+    const handleResize = () => setWindowSize({ width: window.innerWidth });
     window.addEventListener("resize", handleResize);
     handleResize();
     return () => window.removeEventListener("resize", handleResize);
   }, []);
   return windowSize;
 };
+
 const Index = () => {
   const [selectedTab, setSelectedTab] = useState("pending");
-  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const [isProcessing, setIsProcessing] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
+  const [showPopupCard, setShowPopupCard] = useState(false);
+  const [popupData, setPopupData] = useState(null); // ✅ Store lead info
   const [user, setUser] = useState([]);
+  const [pendingPhone, setPendingPhone] = useState("");
+
   const loginModalRef = useRef(null);
   const otpModalRef = useRef(null);
+
   const { width } = useWindowSize();
-  const [pendingPhone, setPendingPhone] = useState("");
   const isMobile = width < 640;
+
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const mobile = localStorage.getItem("userPhone");
 
+  // Render tab content
   const renderContent = () => {
     switch (selectedTab) {
-      case "pending":
-        return <PendingScreen status="pending" />;
       case "accepted":
         return <MyOrder status="accepted" />;
       case "declined":
         return <DeclinedScreen status="declined" />;
+      case "pending":
+        return <PendingScreen status="pending" />;
       default:
         return null;
     }
   };
 
+  // Handle login modal open
   const handleLoginClick = () => {
     setIsProcessing(true);
     setTimeout(() => {
@@ -58,90 +68,88 @@ const Index = () => {
     }, 500);
   };
 
+  // ✅ Fetch vendor leads every 5 seconds
   useEffect(() => {
-    if (showLoginModal || showOtpModal) {
-      document.body.classList.add("overflow-hidden");
-    } else {
-      document.body.classList.remove("overflow-hidden");
-    }
-    return () => document.body.classList.remove("overflow-hidden");
-  }, [showLoginModal, showOtpModal]);
+    if (!isLoggedIn || !mobile) return;
 
+    const fetchLeads = async () => {
+      try {
+        const leads = await ShowLeads(mobile, "Pending");
+        if (Array.isArray(leads) && leads.length > 0) {
+          console.log("🟢 New leads:", leads);
+          setPopupData(leads[0]);
+          setShowPopupCard(true);
+        } else {
+          console.log("🟡 No new leads");
+        }
+      } catch (err) {
+        console.error("❌ Error fetching leads:", err);
+      }
+    };
+
+    fetchLeads(); // run once immediately
+    const interval = setInterval(fetchLeads, 5000); // repeat every 5s
+    return () => clearInterval(interval);
+  }, [isLoggedIn, mobile]);
+
+  // ✅ Update vendor location every 5 seconds
   useEffect(() => {
+    if (!isLoggedIn || !mobile) return;
+
+    const updateLocation = async () => {
+      if (!navigator.geolocation) {
+        console.warn("Geolocation not supported by browser.");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude } = pos.coords;
+          console.log("📍 Current Location:", latitude, longitude);
+
+          try {
+            const res = await UpdateCurrentLocations({
+              VendorPhone: mobile,
+              Lat: latitude,
+              Lon: longitude,
+            });
+            console.log("✅ Location updated:", res);
+          } catch (error) {
+            console.error("❌ Error updating location:", error);
+          }
+        },
+        (error) => console.warn("⚠️ Location access denied:", error.message)
+      );
+    };
+
+    updateLocation();
+    const interval = setInterval(updateLocation, 5000);
+    return () => clearInterval(interval);
+  }, [isLoggedIn, mobile]);
+
+  // Lock background scroll when modals are open
+  useEffect(() => {
+    const active = showLoginModal || showOtpModal || showPopupCard;
+    document.body.classList.toggle("overflow-hidden", active);
+    return () => document.body.classList.remove("overflow-hidden");
+  }, [showLoginModal, showOtpModal, showPopupCard]);
+
+  // Fetch user details
+  useEffect(() => {
+    if (!mobile) return;
     const fetchUser = async () => {
       try {
         const data = await GetUser(mobile);
-        console.log("user have fetched from the index", data);
+        console.log("User fetched:", data);
         setUser(data || []);
       } catch (error) {
         console.error("Error fetching user:", error);
       }
     };
-
-    if (mobile) fetchUser();
+    fetchUser();
   }, [mobile]);
 
-  useEffect(() => {
-    if (!showLoginModal || !loginModalRef.current) return;
-    const modalElement = loginModalRef.current;
-    const focusableElements = modalElement.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
-
-    const handleKeyDown = (e) => {
-      if (e.key !== "Tab") return;
-      if (e.shiftKey && document.activeElement === firstElement) {
-        e.preventDefault();
-        lastElement.focus();
-      } else if (!e.shiftKey && document.activeElement === lastElement) {
-        e.preventDefault();
-        firstElement.focus();
-      }
-    };
-
-    modalElement.addEventListener("keydown", handleKeyDown);
-    firstElement?.focus();
-    return () => modalElement.removeEventListener("keydown", handleKeyDown);
-  }, [showLoginModal]);
-
-  useEffect(() => {
-    if (!showOtpModal || !otpModalRef.current) return;
-    const modalElement = otpModalRef.current;
-    const focusableElements = modalElement.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
-
-    const handleKeyDown = (e) => {
-      if (e.key !== "Tab") return;
-      if (e.shiftKey && document.activeElement === firstElement) {
-        e.preventDefault();
-        lastElement.focus();
-      } else if (!e.shiftKey && document.activeElement === lastElement) {
-        e.preventDefault();
-        firstElement.focus();
-      }
-    };
-
-    modalElement.addEventListener("keydown", handleKeyDown);
-    firstElement?.focus();
-    return () => modalElement.removeEventListener("keydown", handleKeyDown);
-  }, [showOtpModal]);
-
-  const modalVariants = {
-    hidden: { opacity: 0, scale: 0.95 },
-    visible: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 0.95 },
-  };
-  const bottomSheetVariants = {
-    hidden: { y: "100%", opacity: 0 },
-    visible: { y: 0, opacity: 1 },
-    exit: { y: "100%", opacity: 0 },
-  };
-
+  // Handle login submit → show OTP modal
   const handleLoginSubmit = (phoneNumber) => {
     setIsProcessing(true);
     setTimeout(() => {
@@ -159,6 +167,25 @@ const Index = () => {
     window.location.reload();
   };
 
+  // ✅ Popup close handler
+  const handlePopupClose = () => {
+    setShowPopupCard(false);
+    setPopupData(null);
+  };
+
+  // Modal variants
+  const modalVariants = {
+    hidden: { opacity: 0, scale: 0.95 },
+    visible: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 0.95 },
+  };
+  const bottomSheetVariants = {
+    hidden: { y: "100%", opacity: 0 },
+    visible: { y: 0, opacity: 1 },
+    exit: { y: "100%", opacity: 0 },
+  };
+
+  // If not logged in
   if (!isLoggedIn) {
     return (
       <div
@@ -176,8 +203,7 @@ const Index = () => {
             You’re not logged in
           </h2>
           <p className={`${COLORS.textMuted} mb-8 text-sm sm:text-base`}>
-            To access your profile and start using all features, please log in
-            to your account.
+            To access your profile and start using all features, please log in.
           </p>
           <button
             onClick={handleLoginClick}
@@ -189,10 +215,6 @@ const Index = () => {
             } ${COLORS.hoverTo} transition-all duration-300 ${
               isProcessing ? "opacity-50 cursor-not-allowed" : ""
             }`}
-            aria-label={
-              isProcessing ? "Processing login" : "Log in to your account"
-            }
-            aria-busy={isProcessing}
           >
             {isProcessing ? (
               <div className="flex items-center justify-center">
@@ -204,124 +226,23 @@ const Index = () => {
             )}
           </button>
         </motion.div>
-
-        <AnimatePresence>
-          {showLoginModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 pointer-events-auto"
-              ref={loginModalRef}
-              aria-modal="true"
-              role="dialog"
-            >
-              {isMobile ? (
-                <motion.div
-                  variants={bottomSheetVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="fixed bottom-0 left-0 right-0 w-full h-[70vh] bg-white rounded-t-2xl shadow-2xl p-6 max-w-md mx-auto pointer-events-auto"
-                >
-                  <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
-                  <LoginCard
-                    onClose={() => setShowLoginModal(false)}
-                    onSubmit={handleLoginSubmit}
-                  />
-                </motion.div>
-              ) : (
-                <motion.div
-                  variants={modalVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="flex items-center justify-center h-full"
-                >
-                  <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full pointer-events-auto">
-                    <LoginCard
-                      onClose={() => setShowLoginModal(false)}
-                      onSubmit={handleLoginSubmit}
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {showOtpModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 pointer-events-auto"
-              ref={otpModalRef}
-              aria-modal="true"
-              role="dialog"
-            >
-              {isMobile ? (
-                <motion.div
-                  variants={bottomSheetVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="fixed bottom-0 left-0 right-0 w-full h-[70vh] bg-white rounded-t-2xl shadow-2xl p-6 max-w-md mx-auto pointer-events-auto"
-                >
-                  <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
-                  <OtpVerification
-                    phone={pendingPhone}
-                    onSuccess={handleOtpSuccess}
-                    onClose={() => setShowOtpModal(false)}
-                  />
-                </motion.div>
-              ) : (
-                <motion.div
-                  variants={modalVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="flex items-center justify-center h-full"
-                >
-                  <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full pointer-events-auto">
-                    <OtpVerification
-                      phone={pendingPhone}
-                      onSuccess={handleOtpSuccess}
-                      onClose={() => setShowOtpModal(false)}
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     );
   }
 
+  // ✅ Main vendor view
   return (
     <>
       {user[0]?.verified === "approved" ? (
         <div className="min-h-screen bg-gray-50">
           <section className="relative bg-white p-4">
-            {/* Tab bar with change handler */}
             <TabBar onTabChange={setSelectedTab} />
-
-            {/* Render the selected tab's content */}
             <div className="mt-6">
               <Suspense fallback={<div>Loading...</div>}>
                 {renderContent()}
               </Suspense>
             </div>
           </section>
-
           <footer className="mt-8 bg-gray-100 z-10 md:hidden">
             <Footer />
           </footer>
@@ -329,6 +250,48 @@ const Index = () => {
       ) : (
         <VendorVerification />
       )}
+
+      {/* ✅ POPUP CARD (for new leads) */}
+      <AnimatePresence>
+        {showPopupCard && popupData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 pointer-events-auto"
+            aria-modal="true"
+            role="dialog"
+          >
+            {isMobile ? (
+              <motion.div
+                variants={bottomSheetVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="fixed bottom-0 left-0 right-0 w-full h-[70vh] bg-white rounded-t-2xl shadow-2xl p-6 max-w-md mx-auto pointer-events-auto"
+              >
+                <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+                <Popupcard data={popupData} onClose={handlePopupClose} />
+              </motion.div>
+            ) : (
+              <motion.div
+                variants={modalVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="flex items-center justify-center h-full"
+              >
+                <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full pointer-events-auto">
+                  <Popupcard data={popupData} onClose={handlePopupClose} />
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

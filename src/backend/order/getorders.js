@@ -21,7 +21,7 @@ class GetOrderModel {
     this.OrderID = OrderID;
     this.UserID = UserID;
     this.OrderType = OrderType;
-    this.ItemImages = ItemImages; // lowercase
+    this.ItemImages = ItemImages;
     this.ItemName = ItemName;
     this.Price = Price;
     this.Quantity = Quantity;
@@ -33,13 +33,12 @@ class GetOrderModel {
   }
 
   static fromJson(json) {
-    // Normalize image URL
-    let imageUrl = "";
-    if (json.ItemImages) {
-      imageUrl = json.ItemImages.startsWith("http")
+    // Use placeholder if no image
+    const imageUrl = json.ItemImages
+      ? json.ItemImages.startsWith("http")
         ? json.ItemImages
-        : `https://weprettify.com/Images/${json.ItemImages}`;
-    }
+        : `https://weprettify.com/Images/${json.ItemImages}`
+      : "";
 
     return new GetOrderModel(
       json.ID || 0,
@@ -59,11 +58,12 @@ class GetOrderModel {
   }
 }
 
-// Fetch orders function
-const GetOrders = async (UserID, Status = "Pending") => {
+// Fetch orders
+const GetOrders = async (VendorPhone, Status) => {
   const formData = new URLSearchParams();
   formData.append("token", "SWNCMPMSREMXAMCKALVAALI");
-  formData.append("UserID", UserID);
+  formData.append("UserID", ""); // leave empty as API requires
+  formData.append("VendorPhone", VendorPhone);
   formData.append("Status", Status);
 
   try {
@@ -71,36 +71,22 @@ const GetOrders = async (UserID, Status = "Pending") => {
       "https://api.hukmee.in/APIs/APIs.asmx/ShowOrders",
       formData,
       {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
       }
     );
 
     let rawData = response.data;
 
+    // Parse if string
     if (typeof rawData === "string") {
-      try {
-        rawData = JSON.parse(rawData);
-      } catch (err) {
-        console.error("Invalid JSON format in ShowOrders response", err);
-        return [];
-      }
+      rawData = JSON.parse(rawData);
     }
 
-    if (!Array.isArray(rawData)) {
-      console.error("Unexpected response format:", rawData);
-      return [];
-    }
+    if (!Array.isArray(rawData)) return [];
 
-    // Map and normalize each order
     return rawData.map((item) => GetOrderModel.fromJson(item));
   } catch (error) {
-    console.error("Error fetching GetOrders:", {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-    });
+    console.error("Error fetching orders:", error);
     return [];
   }
 };

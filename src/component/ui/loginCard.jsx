@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Phone, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import colors from "../core/constant"; // ✅ corrected import
+import SendSMS from "../../backend/authentication/getotp";
 
 // ✅ Hook to get window width (for mobile/desktop detection)
 const useWindowSize = () => {
@@ -61,8 +62,19 @@ const LoginCard = ({ onClose, onSubmit }) => {
     setLoading(true);
 
     try {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
       localStorage.setItem("userPhone", phoneNumber);
-      onSubmit(phoneNumber); // Call parent
+      localStorage.setItem("userOTP", otp);
+
+      const smsResult = await SendSMS(phoneNumber, otp);
+      if (smsResult.success) {
+        alert(`✅ OTP sent successfully to +91${phoneNumber}`);
+        onSubmit(phoneNumber); // proceed to OTP verification
+      } else {
+        alert(`❌ Failed to send OTP. Try again later.`);
+        console.error("SendSMS error:", smsResult);
+      }
+      onSubmit(phoneNumber);
     } catch (error) {
       console.error("Error saving phone number:", error);
     } finally {

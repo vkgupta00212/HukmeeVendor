@@ -11,7 +11,7 @@ const PendingScreen = () => {
     const fetchgetorder = async () => {
       setIsLoading(true);
       try {
-        const data = await GetOrders(UserID, "Accepted"); // you can change Status if needed
+        const data = await GetOrders(UserID, "Pending");
         console.log("Fetched Orders: ", data);
         setGetOrder(data || []);
       } catch (error) {
@@ -41,18 +41,12 @@ export default PendingScreen;
 
 const OrderDetails = ({ orders }) => {
   const headers = [
-    "ID",
     "OrderID",
     "UserID",
     "OrderType",
-    "ItemImages",
     "ItemName",
     "Price",
     "Quantity",
-    "Address",
-    "Slot",
-    "SlotDatetime",
-    "OrderDatetime",
     "Status",
   ];
 
@@ -63,7 +57,7 @@ const OrderDetails = ({ orders }) => {
       <h2
         className={`text-2xl md:text-3xl font-bold bg-gradient-to-r ${COLORS.gradientFrom} ${COLORS.gradientTo} bg-clip-text text-transparent p-6`}
       >
-        Pending Order Details
+        Orders
       </h2>
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
@@ -92,11 +86,11 @@ const OrderDetails = ({ orders }) => {
             ) : (
               orders.map((order) => (
                 <tr key={order.ID} className="hover:bg-gray-50 transition">
-                  <td
+                  {/* <td
                     className={`px-6 py-4 whitespace-nowrap text-sm ${COLORS.textGrayDark}`}
                   >
                     {order.ID}
-                  </td>
+                  </td> */}
                   <td
                     className={`px-6 py-4 whitespace-nowrap text-sm ${COLORS.textGrayDark}`}
                   >
@@ -112,21 +106,7 @@ const OrderDetails = ({ orders }) => {
                   >
                     {order.OrderType}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {order.ItemImages ? (
-                      <img
-                        src={order.ItemImages}
-                        alt={order.ItemName}
-                        className="h-12 w-12 object-cover rounded"
-                        onError={(e) => {
-                          e.target.src =
-                            "https://via.placeholder.com/150?text=Image+Not+Found";
-                        }}
-                      />
-                    ) : (
-                      "N/A"
-                    )}
-                  </td>
+
                   <td
                     className={`px-6 py-4 whitespace-nowrap text-sm ${COLORS.textGrayDark}`}
                   >
@@ -142,38 +122,37 @@ const OrderDetails = ({ orders }) => {
                   >
                     {order.Quantity}
                   </td>
-                  <td
-                    className={`px-6 py-4 whitespace-nowrap text-sm ${COLORS.textGrayDark}`}
-                  >
-                    {order.Address || "N/A"}
-                  </td>
-                  <td
-                    className={`px-6 py-4 whitespace-nowrap text-sm ${COLORS.textGrayDark}`}
-                  >
-                    {order.Slot || "N/A"}
-                  </td>
-                  <td
-                    className={`px-6 py-4 whitespace-nowrap text-sm ${COLORS.textGrayDark}`}
-                  >
-                    {order.SlotDatetime || "N/A"}
-                  </td>
-                  <td
-                    className={`px-6 py-4 whitespace-nowrap text-sm ${COLORS.textGrayDark}`}
-                  >
-                    {order.OrderDatetime
-                      ? new Date(order.OrderDatetime).toLocaleString()
-                      : "N/A"}
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        order.Status === "Pending"
-                          ? `${COLORS.pendingBg} ${COLORS.pendingText}`
-                          : `${COLORS.successBg} ${COLORS.successText}`
-                      }`}
-                    >
-                      {order.Status}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      {/* Status Badge */}
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          order.Status === "Pending"
+                            ? `${COLORS.pendingBg} ${COLORS.pendingText}`
+                            : `${COLORS.successBg} ${COLORS.successText}`
+                        }`}
+                      >
+                        {order.Status}
+                      </span>
+
+                      {/* Action Buttons */}
+                      {order.Status === "Pending" && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleAccept(order.ID)}
+                            className="bg-green-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-green-600 transition"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleDecline(order.ID)}
+                            className="bg-red-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-red-600 transition"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))

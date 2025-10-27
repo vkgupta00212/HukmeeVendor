@@ -2,35 +2,48 @@ import React, { useState, useEffect } from "react";
 import GetOrders from "../../backend/order/getorders";
 import COLORS from "../core/constant";
 
-const MyOrder = () => {
-  const [getorder, setGetOrder] = useState([]);
+const MyOrder = ({ status = "Done" }) => {
+  const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const UserID = localStorage.getItem("userPhone");
+  const VendorPhone = localStorage.getItem("userPhone");
+  console.log("VendorPhone:", VendorPhone);
 
   useEffect(() => {
-    const fetchgetorder = async () => {
+    if (!VendorPhone) return;
+
+    let isMounted = true; // track if component is still mounted
+
+    const fetchOrders = async () => {
       setIsLoading(true);
       try {
-        const data = await GetOrders(UserID, "Accepted"); // change status if needed
-        setGetOrder(data || []);
+        const data = await GetOrders(VendorPhone, status);
+        console.log("Fetched Orders:", data);
+        if (isMounted) setOrders(data || []);
       } catch (error) {
         console.error("Error fetching orders:", error);
-        setGetOrder([]);
+        if (isMounted) setOrders([]);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
-    if (UserID) fetchgetorder();
-  }, [UserID]);
+    fetchOrders();
+    const interval = setInterval(fetchOrders, 5000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [VendorPhone, status]);
 
   return (
-    <div className={`${COLORS.bgGray} py-10`}>
+    <div className={`${COLORS.bgGray} py-10 min-h-screen`}>
       {isLoading ? (
         <div className={`text-center ${COLORS.primaryFrom} font-semibold`}>
           Loading orders...
         </div>
       ) : (
-        <OrderDetails orders={getorder} />
+        <OrderDetails orders={orders} />
       )}
     </div>
   );
@@ -62,7 +75,7 @@ const OrderDetails = ({ orders }) => {
       <h2
         className={`text-2xl md:text-3xl font-bold bg-gradient-to-r ${COLORS.gradientFrom} ${COLORS.gradientTo} bg-clip-text text-transparent p-6`}
       >
-        Accept Order Details
+        Orders
       </h2>
 
       <div className="overflow-x-auto">
@@ -121,10 +134,10 @@ const OrderDetails = ({ orders }) => {
                         src={order.ItemImages}
                         alt={order.ItemName}
                         className="h-12 w-12 object-cover rounded"
-                        onError={(e) => {
-                          e.target.src =
-                            "https://via.placeholder.com/150?text=Image+Not+Found";
-                        }}
+                        onError={(e) =>
+                          (e.target.src =
+                            "https://via.placeholder.com/150?text=Image+Not+Found")
+                        }
                       />
                     ) : (
                       "N/A"
@@ -133,17 +146,17 @@ const OrderDetails = ({ orders }) => {
                   <td
                     className={`px-6 py-4 whitespace-nowrap text-sm ${COLORS.textGrayDark}`}
                   >
-                    {order.ItemName}
+                    {order.ItemName || "N/A"}
                   </td>
                   <td
                     className={`px-6 py-4 whitespace-nowrap text-sm ${COLORS.textGrayDark}`}
                   >
-                    ₹{order.Price}
+                    ₹{order.Price || 0}
                   </td>
                   <td
                     className={`px-6 py-4 whitespace-nowrap text-sm ${COLORS.textGrayDark}`}
                   >
-                    {order.Quantity}
+                    {order.Quantity || 0}
                   </td>
                   <td
                     className={`px-6 py-4 whitespace-nowrap text-sm ${COLORS.textGrayDark}`}
@@ -172,12 +185,12 @@ const OrderDetails = ({ orders }) => {
                   >
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        order.Status === "Pending"
+                        order.Status.toLowerCase() === "pending"
                           ? `${COLORS.pendingBg} ${COLORS.pendingText}`
                           : `${COLORS.successBg} ${COLORS.successText}`
                       }`}
                     >
-                      {order.Status}
+                      {order.Status || "N/A"}
                     </span>
                   </td>
                 </tr>

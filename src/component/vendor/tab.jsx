@@ -6,9 +6,10 @@ const TabBar = ({ onTabChange }) => {
   const [activeTab, setActiveTab] = useState("pending");
 
   const tabs = [
-    { id: "pending", label: "Pending" },
-    { id: "accepted", label: "Accepted" },
+    { id: "pending", label: "Accepted" },
+    { id: "accepted", label: "On Service" },
     { id: "declined", label: "Declined" },
+    { id: "completed", label: "Completed" },
   ];
 
   const handleTabClick = (tabId) => {

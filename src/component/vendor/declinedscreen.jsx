@@ -62,7 +62,7 @@ const OrderDetails = ({ orders }) => {
       <h2
         className={`text-2xl md:text-3xl font-bold bg-gradient-to-r ${COLORS.gradientFrom} ${COLORS.gradientTo} bg-clip-text text-transparent p-6`}
       >
-        Declined Order Details
+        Orders
       </h2>
 
       <div className="overflow-x-auto">

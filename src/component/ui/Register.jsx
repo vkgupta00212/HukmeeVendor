@@ -8,7 +8,7 @@ const RegisterPage = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    address: "",
+    address: "",  
     aadhaarFront: "",
     aadhaarBack: "",
   });

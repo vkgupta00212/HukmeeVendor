@@ -26,6 +26,7 @@ const OtpVerification = ({ onClose, onVerify }) => {
   const { width } = useWindowSize();
   const isMobile = width < 640;
   const navigate = useNavigate();
+  const otpv = localStorage.getItem("userOTP");
 
   useEffect(() => {
     document.body.classList.add("overflow-hidden");
@@ -108,7 +109,7 @@ const OtpVerification = ({ onClose, onVerify }) => {
     const code = otp.join("");
 
     // OTP validation
-    if (code !== "123456") {
+    if (code !== otpv) {
       alert("Invalid OTP");
       return;
     }
