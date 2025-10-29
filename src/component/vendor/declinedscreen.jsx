@@ -11,7 +11,7 @@ const DeclinedScreen = () => {
     const fetchgetorder = async () => {
       setIsLoading(true);
       try {
-        const data = await GetOrders(UserID, "Declined"); // update Status to Declined
+        const data = await GetOrders(UserID, "Cancelled"); // update Status to Declined
         setGetOrder(data || []);
       } catch (error) {
         console.error("Error fetching orders:", error);

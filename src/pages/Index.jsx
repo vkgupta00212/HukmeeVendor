@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Footer from "../component/Footer";
 import MyOrder from "../component/vendor/orderedscreen";
 import TabBar from "../component/vendor/tab";
+import AcceptedScreen from "../component/vendor/orderedscreen";
 import PendingScreen from "../component/vendor/pendingscreen";
 import DeclinedScreen from "../component/vendor/declinedscreen";
 import COLORS from "../component/core/constant";
@@ -12,7 +13,9 @@ import OtpVerification from "../component/ui/otpverification.jsx";
 import GetUser from "../backend/authentication/getuser.js";
 import VendorVerification from "../component/ui/verification.jsx";
 import UpdateCurrentLocations from "../backend/updatelocation/updatelocation.js";
-import ShowLeads from "../backend/order/showleads.js"; // ✅ Correct import
+import ShowLeads from "../backend/order/showleads.js";
+import OnService from "../component/vendor/onservice.jsx";
+import CompletedScreen from "../component/vendor/completed.jsx";
 
 // Hook to track window size
 const useWindowSize = () => {
@@ -27,15 +30,14 @@ const useWindowSize = () => {
 };
 
 const Index = () => {
-  const [selectedTab, setSelectedTab] = useState("pending");
+  const [selectedTab, setSelectedTab] = useState("accepted");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [showPopupCard, setShowPopupCard] = useState(false);
-  const [popupData, setPopupData] = useState(null); // ✅ Store lead info
+  const [popupData, setPopupData] = useState(null);
   const [user, setUser] = useState([]);
   const [pendingPhone, setPendingPhone] = useState("");
-
   const loginModalRef = useRef(null);
   const otpModalRef = useRef(null);
 
@@ -49,11 +51,13 @@ const Index = () => {
   const renderContent = () => {
     switch (selectedTab) {
       case "accepted":
-        return <MyOrder status="accepted" />;
+        return <AcceptedScreen />;
+      case "onservice":
+        return <OnService />;
       case "declined":
-        return <DeclinedScreen status="declined" />;
-      case "pending":
-        return <PendingScreen status="pending" />;
+        return <DeclinedScreen />;
+      case "completed":
+        return <CompletedScreen />;
       default:
         return null;
     }
@@ -68,7 +72,7 @@ const Index = () => {
     }, 500);
   };
 
-  // ✅ Fetch vendor leads every 5 seconds
+  // Fetch vendor leads every 5 seconds
   useEffect(() => {
     if (!isLoggedIn || !mobile) return;
 
@@ -87,12 +91,12 @@ const Index = () => {
       }
     };
 
-    fetchLeads(); // run once immediately
-    const interval = setInterval(fetchLeads, 5000); // repeat every 5s
+    fetchLeads();
+    const interval = setInterval(fetchLeads, 5000);
     return () => clearInterval(interval);
   }, [isLoggedIn, mobile]);
 
-  // ✅ Update vendor location every 5 seconds
+  // Update vendor location every 5 seconds
   useEffect(() => {
     if (!isLoggedIn || !mobile) return;
 
@@ -160,6 +164,7 @@ const Index = () => {
     }, 500);
   };
 
+  // Handle OTP success
   const handleOtpSuccess = (verifiedPhone) => {
     localStorage.setItem("userPhone", verifiedPhone);
     localStorage.setItem("isLoggedIn", "true");
@@ -167,7 +172,7 @@ const Index = () => {
     window.location.reload();
   };
 
-  // ✅ Popup close handler
+  // Popup close handler
   const handlePopupClose = () => {
     setShowPopupCard(false);
     setPopupData(null);
@@ -226,11 +231,113 @@ const Index = () => {
             )}
           </button>
         </motion.div>
+
+        {/* Login Modal */}
+        <AnimatePresence>
+          {showLoginModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 pointer-events-auto"
+              aria-modal="true"
+              role="dialog"
+            >
+              {isMobile ? (
+                <motion.div
+                  variants={bottomSheetVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="fixed bottom-0 left-0 right-0 w-full h-[70vh] bg-white rounded-t-2xl shadow-2xl p-6 max-w-md mx-auto pointer-events-auto"
+                  ref={loginModalRef}
+                >
+                  <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+                  <LoginCard
+                    onSubmit={handleLoginSubmit}
+                    onClose={() => setShowLoginModal(false)}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  variants={modalVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="flex items-center justify-center h-full"
+                  ref={loginModalRef}
+                >
+                  <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full pointer-events-auto">
+                    <LoginCard
+                      onSubmit={handleLoginSubmit}
+                      onClose={() => setShowLoginModal(false)}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* OTP Verification Modal */}
+        <AnimatePresence>
+          {showOtpModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 pointer-events-auto"
+              aria-modal="true"
+              role="dialog"
+            >
+              {isMobile ? (
+                <motion.div
+                  variants={bottomSheetVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="fixed bottom-0 left-0 right-0 w-full h-[70vh] bg-white rounded-t-2xl shadow-2xl p-6 max-w-md mx-auto pointer-events-auto"
+                  ref={otpModalRef}
+                >
+                  <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+                  <OtpVerification
+                    phoneNumber={pendingPhone}
+                    onSuccess={handleOtpSuccess}
+                    onClose={() => setShowOtpModal(false)}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  variants={modalVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="flex items-center justify-center h-full"
+                  ref={otpModalRef}
+                >
+                  <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full pointer-events-auto">
+                    <OtpVerification
+                      phoneNumber={pendingPhone}
+                      onSuccess={handleOtpSuccess}
+                      onClose={() => setShowOtpModal(false)}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }
 
-  // ✅ Main vendor view
+  // Main vendor view
   return (
     <>
       {user[0]?.verified === "approved" ? (
@@ -251,7 +358,7 @@ const Index = () => {
         <VendorVerification />
       )}
 
-      {/* ✅ POPUP CARD (for new leads) */}
+      {/* Popup Card (for new leads) */}
       <AnimatePresence>
         {showPopupCard && popupData && (
           <motion.div

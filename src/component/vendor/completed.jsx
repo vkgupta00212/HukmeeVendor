@@ -5,7 +5,7 @@ import COLORS from "../core/constant";
 import UpdateOrderstatus from "../../backend/order/updateorderstatus";
 import StartServiceVerify from "../ui/startserviceverify";
 
-const AcceptedScreen = () => {
+const CompletedScreen = () => {
   const [getorder, setGetOrder] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -29,7 +29,7 @@ const AcceptedScreen = () => {
     const fetchgetorder = async () => {
       setIsLoading(true);
       try {
-        const data = await GetOrders(UserID, "Done");
+        const data = await GetOrders(UserID, "Completed");
         console.log("Fetched Orders:", data);
         setGetOrder(data || []);
       } catch (error) {
@@ -188,7 +188,7 @@ const AcceptedScreen = () => {
   );
 };
 
-export default AcceptedScreen;
+export default CompletedScreen;
 
 // ==========================
 // ✅ OrderDetails Component

@@ -5,6 +5,7 @@ import colors from "../core/constant";
 import AcceptLeads from "../../backend/order/acceptleads";
 import DeclineLeads from "../../backend/order/declineleads";
 import ShowLeads from "../../backend/order/showleads";
+import UpdateOrders from "../../backend/order/updateorderstatus";
 
 const useWindowSize = () => {
   const [windowSize, setWindowSize] = useState({ width: undefined });
@@ -76,15 +77,35 @@ const Popupcard = ({ onClose, onSubmit }) => {
       return;
     }
 
-    const orderId = leadsDetails[0].OrderID; // 👈 get first lead OrderID
+    // ✅ Use the first pending lead
+    const order = leadsDetails[0];
+    const orderId = order.OrderID;
+
     console.log("Accepting order:", orderId);
 
     try {
-      const response = await AcceptLeads(orderId, UserID); // 👈 Call your AcceptLeads function
-      console.log("✅ Order accepted:", response);
-      onClose(); // Close modal after accepting
+      const acceptResponse = await AcceptLeads(orderId, UserID);
+      console.log("✅ Lead accepted:", acceptResponse);
+
+      // Step 2️⃣: Update order status to "Onservice"
+      const updateResponse = await UpdateOrders({
+        OrderID: orderId,
+        Status: "Done",
+        VendorPhone: UserID,
+        BeforVideo: "",
+        AfterVideo: "",
+        OTP: "",
+        PaymentMethod: "",
+      });
+
+      console.log("✅ Order status updated:", updateResponse);
+      window.location.reload();
+      alert(`Order ${orderId} accepted and updated to "Onservice"`);
+      onClose?.();
     } catch (error) {
-      console.error("❌ Error accepting order:", error);
+      console.error("❌ Error accepting or updating order:", error);
+      alert("Failed to accept or update the order. Please try again.");
+      onClose?.(); // Close modal even on failure for UX
     }
   };
 
@@ -104,7 +125,7 @@ const Popupcard = ({ onClose, onSubmit }) => {
       } else {
         console.warn("⚠️ Unexpected response:", response);
       }
-
+      window.location.reload();
       onClose?.(); // close modal after decline
     } catch (error) {
       console.error("❌ Error declining order:", {

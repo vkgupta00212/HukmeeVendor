@@ -3,15 +3,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import GetOrders from "../../backend/order/getorders";
 import COLORS from "../core/constant";
 import UpdateOrderstatus from "../../backend/order/updateorderstatus";
-import StartServiceVerify from "../ui/startserviceverify";
+import RecordVideo from "../ui/recordvideo";
 
-const AcceptedScreen = () => {
+const OnService = () => {
   const [getorder, setGetOrder] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showotp, setShowotp] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [otp, setOtp] = useState(null);
+
+  // ✅ track before/after video upload separately
+  const [uploadedBeforeVideos, setUploadedBeforeVideos] = useState({});
+  const [uploadedAfterVideos, setUploadedAfterVideos] = useState({});
+  const [videoType, setVideoType] = useState("Before");
 
   const otpModalRef = useRef(null);
   const UserID = localStorage.getItem("userPhone");
@@ -29,7 +34,7 @@ const AcceptedScreen = () => {
     const fetchgetorder = async () => {
       setIsLoading(true);
       try {
-        const data = await GetOrders(UserID, "Done");
+        const data = await GetOrders(UserID, "Onservice");
         console.log("Fetched Orders:", data);
         setGetOrder(data || []);
       } catch (error) {
@@ -55,9 +60,7 @@ const AcceptedScreen = () => {
         PaymentMethod: "",
       });
 
-      console.log("Cancel Response:", response);
       alert(response?.message || "Order cancelled successfully!");
-
       const refreshedData = await GetOrders(UserID, "Done");
       setGetOrder(refreshedData || []);
     } catch (error) {
@@ -66,29 +69,23 @@ const AcceptedScreen = () => {
     }
   };
 
-  // Accept/Start Order
-  const handleAcceptService = async (order) => {
-    console.log("Starting service for order:", order);
-
-    // safely extract the value
+  // Handle Before/After button click
+  const handleVideoClick = (order, type) => {
+    console.log(`Starting ${type} video for order:`, order);
     const otpValue = order?.OTP || order?.otp || (order?._doc?.OTP ?? null);
-    console.log("Extracted OTP:", otpValue);
-
     setOtp(otpValue);
     setSelectedOrder(order);
+    setVideoType(type);
     setIsProcessing(true);
 
     setTimeout(() => {
       setIsProcessing(false);
       setShowotp(true);
-    }, 500);
+    }, 300);
   };
 
   const handleOtpSuccess = async () => {
-    if (!selectedOrder) {
-      alert("No order selected!");
-      return;
-    }
+    if (!selectedOrder) return alert("No order selected!");
 
     try {
       const response = await UpdateOrderstatus({
@@ -104,7 +101,7 @@ const AcceptedScreen = () => {
       console.log("Update response:", response);
       alert(`Order ${selectedOrder.OrderID} status updated to Onservice`);
     } catch (error) {
-      console.error("Error in OTP success handling:", error);
+      console.error("Error updating status:", error);
       alert("Failed to update order status. Please try again.");
     } finally {
       setShowotp(false);
@@ -133,11 +130,13 @@ const AcceptedScreen = () => {
         <OrderDetails
           orders={getorder}
           onCancel={handleCancelService}
-          onAccept={handleAcceptService}
+          onVideoClick={handleVideoClick}
+          uploadedBeforeVideos={uploadedBeforeVideos}
+          uploadedAfterVideos={uploadedAfterVideos}
         />
       )}
 
-      {/* ✅ OTP Modal Here */}
+      {/* ✅ Video Recording Modal */}
       <AnimatePresence>
         {showotp && (
           <motion.div
@@ -158,10 +157,28 @@ const AcceptedScreen = () => {
                 ref={otpModalRef}
               >
                 <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
-                <StartServiceVerify
-                  onVerify={handleOtpSuccess}
+                <RecordVideo
                   onClose={() => setShowotp(false)}
-                  otpp={otp}
+                  OrderID={selectedOrder?.OrderID}
+                  VendorPhone={UserID}
+                  Status="Onservice"
+                  type={videoType}
+                  OTP={otp}
+                  PaymentMethod={selectedOrder?.PaymentMethod || ""}
+                  onUploaded={(orderId) => {
+                    if (videoType === "Before") {
+                      setUploadedBeforeVideos((prev) => ({
+                        ...prev,
+                        [orderId]: true,
+                      }));
+                    } else {
+                      setUploadedAfterVideos((prev) => ({
+                        ...prev,
+                        [orderId]: true,
+                      }));
+                    }
+                    setShowotp(false);
+                  }}
                 />
               </motion.div>
             ) : (
@@ -174,10 +191,28 @@ const AcceptedScreen = () => {
                 className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full"
                 ref={otpModalRef}
               >
-                <StartServiceVerify
-                  onVerify={handleOtpSuccess}
+                <RecordVideo
                   onClose={() => setShowotp(false)}
-                  otpp={otp}
+                  OrderID={selectedOrder?.OrderID}
+                  VendorPhone={UserID}
+                  Status="Onservice"
+                  type={videoType}
+                  OTP={otp}
+                  PaymentMethod={selectedOrder?.PaymentMethod || ""}
+                  onUploaded={(orderId) => {
+                    if (videoType === "Before") {
+                      setUploadedBeforeVideos((prev) => ({
+                        ...prev,
+                        [orderId]: true,
+                      }));
+                    } else {
+                      setUploadedAfterVideos((prev) => ({
+                        ...prev,
+                        [orderId]: true,
+                      }));
+                    }
+                    setShowotp(false);
+                  }}
                 />
               </motion.div>
             )}
@@ -188,12 +223,18 @@ const AcceptedScreen = () => {
   );
 };
 
-export default AcceptedScreen;
+export default OnService;
 
 // ==========================
 // ✅ OrderDetails Component
 // ==========================
-const OrderDetails = ({ orders, onCancel, onAccept }) => {
+const OrderDetails = ({
+  orders,
+  onCancel,
+  onVideoClick,
+  uploadedBeforeVideos,
+  uploadedAfterVideos,
+}) => {
   const headers = [
     "OrderID",
     "UserID",
@@ -270,19 +311,36 @@ const OrderDetails = ({ orders, onCancel, onAccept }) => {
                         {order.Status}
                       </span>
 
-                      {order.Status === "Done" && (
+                      {order.Status === "Onservice" && (
                         <div className="flex gap-2">
+                          {/* Before Service */}
                           <button
-                            onClick={() => onAccept(order)}
-                            className="bg-green-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-green-600 transition"
+                            onClick={() => onVideoClick(order, "Before")}
+                            disabled={uploadedBeforeVideos[order.OrderID]}
+                            className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                              uploadedBeforeVideos[order.OrderID]
+                                ? "bg-gray-400 text-white cursor-not-allowed"
+                                : "bg-green-500 hover:bg-green-600 text-white"
+                            }`}
                           >
-                            Start Service
+                            {uploadedBeforeVideos[order.OrderID]
+                              ? "Uploaded"
+                              : "Before Service"}
                           </button>
+
+                          {/* After Service */}
                           <button
-                            onClick={() => onCancel(order.OrderID)}
-                            className="bg-red-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-red-600 transition"
+                            onClick={() => onVideoClick(order, "After")}
+                            disabled={uploadedAfterVideos[order.OrderID]}
+                            className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                              uploadedAfterVideos[order.OrderID]
+                                ? "bg-gray-400 text-white cursor-not-allowed"
+                                : "bg-blue-500 hover:bg-blue-600 text-white"
+                            }`}
                           >
-                            Cancel Service
+                            {uploadedAfterVideos[order.OrderID]
+                              ? "Uploaded"
+                              : "After Service"}
                           </button>
                         </div>
                       )}

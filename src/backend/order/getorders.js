@@ -15,7 +15,12 @@ class GetOrderModel {
     Slot,
     SlotDatetime,
     OrderDatetime,
-    Status
+    Status,
+    VendorPhone,
+    BeforVideo,
+    AfterVideo,
+    OTP,
+    PaymentMethod
   ) {
     this.ID = ID;
     this.OrderID = OrderID;
@@ -30,6 +35,11 @@ class GetOrderModel {
     this.SlotDatetime = SlotDatetime;
     this.OrderDatetime = OrderDatetime;
     this.Status = Status;
+    this.VendorPhone = VendorPhone;
+    this.BeforVideo = BeforVideo;
+    this.AfterVideo = AfterVideo;
+    this.OTP = OTP;
+    this.PaymentMethod = PaymentMethod;
   }
 
   static fromJson(json) {
@@ -53,7 +63,12 @@ class GetOrderModel {
       json.Slot || "",
       json.SlotDatetime || "",
       json.OrderDatetime || "",
-      json.Status || ""
+      json.Status || "",
+      json.VendorPhone || "",
+      json.BeforVideo || "",
+      json.AfterVideo || "",
+      json.OTP || "",
+      json.PaymentMethod || ""
     );
   }
 }
@@ -62,7 +77,7 @@ class GetOrderModel {
 const GetOrders = async (VendorPhone, Status) => {
   const formData = new URLSearchParams();
   formData.append("token", "SWNCMPMSREMXAMCKALVAALI");
-  formData.append("UserID", ""); // leave empty as API requires
+  formData.append("UserID", "");
   formData.append("VendorPhone", VendorPhone);
   formData.append("Status", Status);
 

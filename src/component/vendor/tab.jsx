@@ -3,11 +3,11 @@ import { motion } from "framer-motion";
 import COLORS from "../core/constant"; // adjust path as needed
 
 const TabBar = ({ onTabChange }) => {
-  const [activeTab, setActiveTab] = useState("pending");
+  const [activeTab, setActiveTab] = useState("accepted");
 
   const tabs = [
-    { id: "pending", label: "Accepted" },
-    { id: "accepted", label: "On Service" },
+    { id: "accepted", label: "Accepted" },
+    { id: "onservice", label: "On Service" },
     { id: "declined", label: "Declined" },
     { id: "completed", label: "Completed" },
   ];
