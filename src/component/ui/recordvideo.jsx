@@ -1,23 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Video, StopCircle, Clock } from "lucide-react";
+import { Video, StopCircle, Upload, RotateCcw, Clock, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import UpdateOrders from "../../backend/order/updateorderstatus";
 
-// ✅ Hook: Get window width
-const useWindowSize = () => {
-  const [windowSize, setWindowSize] = useState({ width: undefined });
-  useEffect(() => {
-    const handleResize = () => setWindowSize({ width: window.innerWidth });
-    window.addEventListener("resize", handleResize);
-    handleResize();
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-  return windowSize;
-};
-
 const RecordVideo = ({
   onClose,
-  onUploaded, // ✅ added callback to notify parent on success
+  onUploaded,
   OrderID,
   VendorPhone,
   Status = "",
@@ -31,13 +19,12 @@ const RecordVideo = ({
   const [chunks, setChunks] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const timerRef = useRef(null);
-  const { width } = useWindowSize();
-  const isMobile = width < 640;
 
-  // ✅ Initialize Camera
+  // ✅ Initialize camera
   useEffect(() => {
     const initCamera = async () => {
       try {
@@ -48,46 +35,46 @@ const RecordVideo = ({
         streamRef.current = stream;
         if (videoRef.current) videoRef.current.srcObject = stream;
       } catch (err) {
-        alert("Camera access denied. Please enable permissions.");
-        console.error("Camera error:", err);
+        alert("Camera access denied!");
+        console.error(err);
       }
     };
     initCamera();
 
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-      }
+      if (streamRef.current)
+        streamRef.current.getTracks().forEach((track) => track.stop());
       clearInterval(timerRef.current);
     };
   }, []);
 
-  // ✅ Start Recording
+  // ✅ Start recording
   const handleStartRecording = () => {
     if (!streamRef.current) return;
+
     const recorder = new MediaRecorder(streamRef.current);
-    setChunks([]);
-    setMediaRecorder(recorder);
-    setRecordingTime(0);
-
-    recorder.ondataavailable = (e) => setChunks((prev) => [...prev, e.data]);
-
-    recorder.onstop = async () => {
-      const blob = new Blob(chunks, { type: "video/webm" });
+    const localChunks = [];
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) localChunks.push(e.data);
+    };
+    recorder.onstop = () => {
+      const blob = new Blob(localChunks, { type: "video/webm" });
       const url = URL.createObjectURL(blob);
       setVideoURL(url);
-      await uploadVideo(blob);
+      setChunks(localChunks);
     };
 
     recorder.start();
+    setMediaRecorder(recorder);
     setIsRecording(true);
-
-    timerRef.current = setInterval(() => {
-      setRecordingTime((prev) => prev + 1);
-    }, 1000);
+    setRecordingTime(0);
+    timerRef.current = setInterval(
+      () => setRecordingTime((prev) => prev + 1),
+      1000
+    );
   };
 
-  // ✅ Stop Recording
+  // ✅ Stop recording
   const handleStopRecording = () => {
     if (mediaRecorder) {
       mediaRecorder.stop();
@@ -96,26 +83,32 @@ const RecordVideo = ({
     }
   };
 
-  // ✅ Convert Blob → Base64
+  // ✅ Reset
+  const handleResetRecording = () => {
+    setVideoURL(null);
+    setChunks([]);
+    setRecordingTime(0);
+    if (videoRef.current && streamRef.current)
+      videoRef.current.srcObject = streamRef.current;
+  };
+
+  // ✅ Convert Blob to Base64
   const blobToBase64 = (blob) => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result.split(",")[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
+      reader.onloadend = () => resolve(reader.result.split(",")[1]);
       reader.readAsDataURL(blob);
     });
   };
 
-  // ✅ Upload Video to Server
-  // ✅ Upload Video to Server
-  const uploadVideo = async (blob) => {
+  // ✅ Upload function
+  const handleUpload = async () => {
+    if (!chunks.length) return alert("No video recorded!");
     setIsUploading(true);
+
     try {
+      const blob = new Blob(chunks, { type: "video/webm" });
       const base64String = await blobToBase64(blob);
-      console.log("🎥 Base64 (first 100 chars):", base64String.slice(0, 100));
 
       const payload = {
         OrderID,
@@ -127,60 +120,43 @@ const RecordVideo = ({
         PaymentMethod,
       };
 
-      // 🔹 Step 1: Upload the video first
+      // 🔹 Step 1: Upload the video
       const response = await UpdateOrders(payload);
       console.log("📤 Upload Response:", response);
 
-      // 🔹 Step 2: If it's AFTER video, mark order as Completed
+      // 🔹 Step 2: If it's an After video → update status to Completed
       if (type === "After") {
         const completePayload = {
           OrderID,
           Status: "Completed",
           VendorPhone,
         };
-        await UpdateOrders(completePayload);
-        console.log("✅ Order status changed to Completed");
+        const completeResponse = await UpdateOrders(completePayload);
+        console.log("✅ Order marked as Completed:", completeResponse);
+        window.location.reload();
       }
 
       alert(`✅ ${type} video uploaded successfully!`);
+      onUploaded?.(OrderID);
 
-      // 🔹 Step 3: Notify parent component about successful upload
-      if (onUploaded) onUploaded(OrderID);
-
-      // 🔹 Step 4: Stop camera & close modal
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-      }
+      // Stop camera after upload
+      if (streamRef.current)
+        streamRef.current.getTracks().forEach((track) => track.stop());
 
       onClose?.();
     } catch (err) {
       console.error("❌ Upload error:", err);
-      alert("Error uploading video!");
+      alert("❌ Upload failed!");
     } finally {
       setIsUploading(false);
     }
   };
 
-  // ⏱ Timer Formatting
-  const formatTime = (timeInSec) => {
-    const minutes = Math.floor(timeInSec / 60);
-    const seconds = timeInSec % 60;
-    return `${minutes.toString().padStart(2, "0")}:${seconds
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  // Animations
-  const modalVariants = {
-    hidden: { opacity: 0, scale: 0.95 },
-    visible: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 0.95 },
-  };
-
-  const bottomSheetVariants = {
-    hidden: { y: "100%", opacity: 0 },
-    visible: { y: 0, opacity: 1 },
-    exit: { y: "100%", opacity: 0 },
+  // ✅ Timer formatter
+  const formatTime = (seconds) => {
+    const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const s = String(seconds % 60).padStart(2, "0");
+    return `${m}:${s}`;
   };
 
   return (
@@ -189,91 +165,88 @@ const RecordVideo = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
         className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
       >
-        <motion.div
-          variants={isMobile ? bottomSheetVariants : modalVariants}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          transition={{ duration: 0.3 }}
-          className={`bg-white rounded-2xl shadow-lg w-full ${
-            isMobile ? "h-[80vh] max-w-md" : "max-w-md"
-          } p-6 relative`}
-        >
-          {/* Close */}
+        <motion.div className="bg-white rounded-2xl p-6 w-full max-w-md relative shadow-xl">
+          {/* Close Button */}
           <button
-            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            className="absolute top-4 right-4 text-gray-500 hover:text-black"
             onClick={onClose}
             disabled={isUploading}
           >
-            <X className="w-6 h-6" />
+            <X size={20} />
           </button>
 
-          <h2 className="text-xl font-semibold text-center mb-4">
-            Record {type} Verification Video
+          <h2 className="text-lg font-semibold text-center mb-4">
+            Record {type} Video
           </h2>
-          <p className="text-sm text-gray-600 text-center mb-4">
-            Record your {type.toLowerCase()} video. It will automatically upload
-            after stopping.
-          </p>
 
-          {/* Camera Preview */}
-          <div className="relative flex justify-center mb-4">
+          {/* Video Display */}
+          <div className="relative">
             {!videoURL ? (
               <video
                 ref={videoRef}
                 autoPlay
                 muted
-                className="w-full h-60 rounded-lg bg-black object-cover"
+                className="w-full h-60 bg-black rounded-lg object-cover"
               />
             ) : (
               <video
                 src={videoURL}
                 controls
-                className="w-full h-60 rounded-lg bg-black object-cover"
+                className="w-full h-60 bg-black rounded-lg object-cover"
               />
             )}
 
-            {/* Timer */}
             {isRecording && (
-              <div className="absolute top-2 left-2 bg-black/60 text-white text-sm px-3 py-1 rounded-full flex items-center gap-1">
-                <Clock size={14} /> {formatTime(recordingTime)}
+              <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-3 py-1 rounded-full flex items-center gap-2">
+                <Clock size={12} /> {formatTime(recordingTime)}
               </div>
             )}
           </div>
 
-          {/* Controls */}
-          <div className="flex justify-center gap-4">
-            {!isRecording ? (
+          {/* Buttons */}
+          <div className="flex justify-center gap-3 mt-4">
+            {!isRecording && !videoURL && (
               <button
                 onClick={handleStartRecording}
-                disabled={isUploading}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white ${
-                  isUploading
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-green-500 hover:bg-green-600"
-                } transition`}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
               >
-                <Video size={20} /> Start
-              </button>
-            ) : (
-              <button
-                onClick={handleStopRecording}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white bg-red-500 hover:bg-red-600 transition"
-              >
-                <StopCircle size={20} /> Stop
+                <Video size={18} /> Start
               </button>
             )}
-          </div>
 
-          {/* Uploading */}
-          {isUploading && (
-            <div className="mt-4 text-center text-gray-600 animate-pulse">
-              ⏳ Uploading video to server, please wait...
-            </div>
-          )}
+            {isRecording && (
+              <button
+                onClick={handleStopRecording}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              >
+                <StopCircle size={18} /> Stop
+              </button>
+            )}
+
+            {!isRecording && videoURL && (
+              <>
+                <button
+                  onClick={handleResetRecording}
+                  className="bg-gray-500 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                >
+                  <RotateCcw size={18} /> Reset
+                </button>
+                <button
+                  onClick={handleUpload}
+                  disabled={isUploading}
+                  className={`${
+                    isUploading
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-orange-500 hover:bg-orange-600"
+                  } text-white px-4 py-2 rounded-lg flex items-center gap-2`}
+                >
+                  <Upload size={18} /> {isUploading ? "Uploading..." : "Upload"}
+                </button>
+              </>
+            )}
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>

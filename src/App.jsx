@@ -24,6 +24,7 @@ import CartPage from "./component/ui/cartmainpage";
 import ContactInfo from "./component/ui/contact";
 import RegisterCard from "./component/ui/Register";
 import VendorVerification from "./component/ui/verification";
+import NearbyScreen from "./component/vendor/nearby";
 
 const queryClient = new QueryClient();
 
@@ -103,6 +104,7 @@ const App = () => {
               <Route path="/cartpage" element={<CartPage />} />
               <Route path="/contact" element={<ContactInfo />} />
               <Route path="/register" element={<RegisterCard />} />
+              <Route path="/nearby" element={<NearbyScreen />} />
               <Route
                 path="/vendorverification"
                 element={<VendorVerification />}

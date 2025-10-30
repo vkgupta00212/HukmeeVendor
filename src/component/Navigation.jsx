@@ -170,7 +170,7 @@ const Navigation = () => {
               {[
                 { to: "/", label: "Home" },
                 { to: "/course", label: "Courses" },
-                { to: "/course", label: "Nearby Hubs" },
+                { to: "/nearby", label: "Nearby Hubs" },
               ].map((item) =>
                 item.to.startsWith("#") ? (
                   <a

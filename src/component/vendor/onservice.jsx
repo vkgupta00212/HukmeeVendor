@@ -316,14 +316,14 @@ const OrderDetails = ({
                           {/* Before Service */}
                           <button
                             onClick={() => onVideoClick(order, "Before")}
-                            disabled={uploadedBeforeVideos[order.OrderID]}
+                            disabled={order.BeforVideo !== ""}
                             className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                              uploadedBeforeVideos[order.OrderID]
+                              order.BeforVideo != ""
                                 ? "bg-gray-400 text-white cursor-not-allowed"
                                 : "bg-green-500 hover:bg-green-600 text-white"
                             }`}
                           >
-                            {uploadedBeforeVideos[order.OrderID]
+                            {order.BeforVideo !== ""
                               ? "Uploaded"
                               : "Before Service"}
                           </button>
@@ -331,14 +331,14 @@ const OrderDetails = ({
                           {/* After Service */}
                           <button
                             onClick={() => onVideoClick(order, "After")}
-                            disabled={uploadedAfterVideos[order.OrderID]}
+                            disabled={order.AfterVideo !== ""}
                             className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                              uploadedAfterVideos[order.OrderID]
+                              order.AfterVideo !== ""
                                 ? "bg-gray-400 text-white cursor-not-allowed"
                                 : "bg-blue-500 hover:bg-blue-600 text-white"
                             }`}
                           >
-                            {uploadedAfterVideos[order.OrderID]
+                            {order.AfterVideo !== ""
                               ? "Uploaded"
                               : "After Service"}
                           </button>

@@ -68,11 +68,11 @@ const AcceptedScreen = () => {
 
   // Accept/Start Order
   const handleAcceptService = async (order) => {
-    console.log("Starting service for order:", order);
+    // console.log("Starting service for order:", order);
 
     // safely extract the value
     const otpValue = order?.OTP || order?.otp || (order?._doc?.OTP ?? null);
-    console.log("Extracted OTP:", otpValue);
+    // console.log("Extracted OTP:", otpValue);
 
     setOtp(otpValue);
     setSelectedOrder(order);
@@ -101,8 +101,9 @@ const AcceptedScreen = () => {
         PaymentMethod: "",
       });
 
-      console.log("Update response:", response);
-      alert(`Order ${selectedOrder.OrderID} status updated to Onservice`);
+      // console.log("Update response:", response);
+      // alert(`Order ${selectedOrder.OrderID} status updated to Onservice`);
+      window.location.reload();
     } catch (error) {
       console.error("Error in OTP success handling:", error);
       alert("Failed to update order status. Please try again.");
