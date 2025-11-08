@@ -17,6 +17,8 @@ const OnService = () => {
   const [uploadedBeforeVideos, setUploadedBeforeVideos] = useState({});
   const [uploadedAfterVideos, setUploadedAfterVideos] = useState({});
   const [videoType, setVideoType] = useState("Before");
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentOrderId, setPaymentOrderId] = useState(null);
 
   const otpModalRef = useRef(null);
   const UserID = localStorage.getItem("userPhone");
@@ -69,6 +71,25 @@ const OnService = () => {
     }
   };
 
+  const handlePaymentComplete = async (orderId, mode) => {
+    try {
+      const response = await UpdateOrderstatus({
+        OrderID: orderId,
+        Status: "",
+        VendorPhone: UserID,
+        BeforVideo: "",
+        AfterVideo: "",
+        OTP: "",
+        PaymentMethod: mode,
+      });
+
+      alert(response?.message || "Payment successfully! Completed", mode);
+      window.location.reload();
+    } catch (error) {
+      console.error("Cancel Order Error:", error);
+      alert("Failed to cancel the order.");
+    }
+  };
   // Handle Before/After button click
   const handleVideoClick = (order, type) => {
     console.log(`Starting ${type} video for order:`, order);
@@ -84,28 +105,9 @@ const OnService = () => {
     }, 300);
   };
 
-  const handleOtpSuccess = async () => {
-    if (!selectedOrder) return alert("No order selected!");
-
-    try {
-      const response = await UpdateOrderstatus({
-        OrderID: selectedOrder.OrderID,
-        Status: "Onservice",
-        VendorPhone: UserID,
-        BeforVideo: "",
-        AfterVideo: "",
-        OTP: "",
-        PaymentMethod: "",
-      });
-
-      console.log("Update response:", response);
-      alert(`Order ${selectedOrder.OrderID} status updated to Onservice`);
-    } catch (error) {
-      console.error("Error updating status:", error);
-      alert("Failed to update order status. Please try again.");
-    } finally {
-      setShowotp(false);
-    }
+  const handlePayment = (orderId) => {
+    setPaymentOrderId(orderId);
+    setShowPaymentModal(true);
   };
 
   const modalVariants = {
@@ -131,6 +133,7 @@ const OnService = () => {
           orders={getorder}
           onCancel={handleCancelService}
           onVideoClick={handleVideoClick}
+          onPayment={handlePayment}
           uploadedBeforeVideos={uploadedBeforeVideos}
           uploadedAfterVideos={uploadedAfterVideos}
         />
@@ -219,6 +222,60 @@ const OnService = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {showPaymentModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="relative bg-white p-6 rounded-2xl shadow-2xl w-[90%] max-w-sm text-center"
+            >
+              {/* ❌ Cross (Close) Button */}
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="absolute top-3 right-3 text-gray-500 hover:text-red-600 transition"
+              >
+                ✕
+              </button>
+
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 mt-2">
+                Is Payment Completed?
+              </h3>
+
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={() => {
+                    setShowPaymentModal(false);
+                    handlePaymentComplete(paymentOrderId, "Cash");
+                  }}
+                  className="px-4 py-2 text-green-700 rounded-lg bg-green-200 hover:bg-green-700 hover:text-white hover:cursor-pointer transition"
+                >
+                  Cash
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowPaymentModal(false);
+                    handlePaymentComplete(paymentOrderId, "Online");
+                  }}
+                  className="px-4 py-2 text-green-700 rounded-lg bg-green-200 hover:bg-green-700 hover:text-white hover:cursor-pointer transition"
+                >
+                  Online
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -234,6 +291,7 @@ const OrderDetails = ({
   onVideoClick,
   uploadedBeforeVideos,
   uploadedAfterVideos,
+  onPayment,
 }) => {
   const headers = [
     "OrderID",
@@ -314,34 +372,64 @@ const OrderDetails = ({
                       {order.Status === "Onservice" && (
                         <div className="flex gap-2">
                           {/* Before Service */}
-                          <button
-                            onClick={() => onVideoClick(order, "Before")}
-                            disabled={order.BeforVideo !== ""}
-                            className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                              order.BeforVideo != ""
-                                ? "bg-gray-400 text-white cursor-not-allowed"
-                                : "bg-green-500 hover:bg-green-600 text-white"
-                            }`}
-                          >
-                            {order.BeforVideo !== ""
-                              ? "Uploaded"
-                              : "Before Service"}
-                          </button>
+                          {!order.BeforVideo &&
+                            !order.PaymentMethod &&
+                            !order.AfterVideo && (
+                              <button
+                                onClick={() => onVideoClick(order, "Before")}
+                                className="px-3 py-1 rounded-lg text-xs font-semibold transition bg-green-500 hover:bg-green-600 text-white"
+                              >
+                                Before Service
+                              </button>
+                            )}
 
-                          {/* After Service */}
-                          <button
-                            onClick={() => onVideoClick(order, "After")}
-                            disabled={order.AfterVideo !== ""}
-                            className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                              order.AfterVideo !== ""
-                                ? "bg-gray-400 text-white cursor-not-allowed"
-                                : "bg-blue-500 hover:bg-blue-600 text-white"
-                            }`}
-                          >
-                            {order.AfterVideo !== ""
-                              ? "Uploaded"
-                              : "After Service"}
-                          </button>
+                          {order.BeforVideo &&
+                            !order.PaymentMethod &&
+                            !order.AfterVideo && (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => onVideoClick(order, "After")}
+                                  disabled={order.AfterVideo !== ""}
+                                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                                    order.AfterVideo !== ""
+                                      ? "bg-gray-400 text-white cursor-not-allowed"
+                                      : "bg-blue-500 hover:bg-blue-600 text-white"
+                                  }`}
+                                >
+                                  Update service
+                                </button>
+
+                                <button
+                                  onClick={() => onPayment(order.OrderID)}
+                                  disabled={order.AfterVideo !== ""}
+                                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                                    order.AfterVideo !== ""
+                                      ? "bg-gray-400 text-white cursor-not-allowed"
+                                      : "bg-blue-500 hover:bg-blue-600 text-white"
+                                  }`}
+                                >
+                                  Proceed
+                                </button>
+                              </div>
+                            )}
+
+                          {order.BeforVideo &&
+                            order.PaymentMethod &&
+                            !order.AfterVideo && (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => onVideoClick(order, "After")}
+                                  disabled={order.AfterVideo !== ""}
+                                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                                    order.AfterVideo !== ""
+                                      ? "bg-gray-400 text-white cursor-not-allowed"
+                                      : "bg-blue-500 hover:bg-blue-600 text-white"
+                                  }`}
+                                >
+                                  After Service
+                                </button>
+                              </div>
+                            )}
                         </div>
                       )}
                     </div>

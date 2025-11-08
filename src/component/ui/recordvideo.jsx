@@ -144,6 +144,7 @@ const RecordVideo = ({
         streamRef.current.getTracks().forEach((track) => track.stop());
 
       onClose?.();
+      window.location.reload();
     } catch (err) {
       console.error("❌ Upload error:", err);
       alert("❌ Upload failed!");

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import GetForms from "../../backend/getforms/getforms";
+import Colors from "../core/constant";
 
 const AboutUs = () => {
   const [terms, setTerms] = useState(null);
@@ -37,14 +38,16 @@ const AboutUs = () => {
           <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
             About Us
           </h1>
-          <div className="mt-2 h-1 w-20 bg-blue-500 mx-auto rounded-full"></div>
+          <div
+            className={`mt-2 h-1 w-20 bg-${Colors.primaryMain} mx-auto rounded-full`}
+          ></div>
         </div>
 
         {/* Loading State */}
         {loading && (
           <div className="flex justify-center items-center py-12">
             <svg
-              className="animate-spin h-10 w-10 text-blue-600"
+              className={`animate-spin h-10 w-10 text-${Colors.primaryMain}`}
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -72,7 +75,7 @@ const AboutUs = () => {
             <p className="text-red-600 text-lg font-medium">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-4 bg-blue-600 text-white font-semibold py-2 px-6 rounded-xl hover:bg-blue-700 transition-all duration-200"
+              className={`mt-4 bg-${Colors.primaryMain} text-white font-semibold py-2 px-6 rounded-xl hover:bg-${Colors.primaryDark} transition-all duration-200`}
             >
               Retry
             </button>
@@ -90,16 +93,6 @@ const AboutUs = () => {
             </p>
           </div>
         )}
-
-        {/* Back Button */}
-        <div className="mt-10 flex justify-center">
-          <a
-            href="/"
-            className="bg-blue-600 text-white font-semibold py-3 px-8 rounded-xl hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
-          >
-            Back to Home
-          </a>
-        </div>
       </div>
     </div>
   );

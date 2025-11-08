@@ -5,15 +5,13 @@ import COLORS from "../core/constant";
 import UpdateOrderstatus from "../../backend/order/updateorderstatus";
 import StartServiceVerify from "../ui/startserviceverify";
 
-const AcceptedScreen = () => {
+const CanceledScreen = () => {
   const [getorder, setGetOrder] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showotp, setShowotp] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [otp, setOtp] = useState(null);
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelOrderId, setCancelOrderId] = useState(null);
 
   const otpModalRef = useRef(null);
   const UserID = localStorage.getItem("userPhone");
@@ -31,7 +29,7 @@ const AcceptedScreen = () => {
     const fetchgetorder = async () => {
       setIsLoading(true);
       try {
-        const data = await GetOrders(UserID, "Done");
+        const data = await GetOrders(UserID, "Cancelled");
         console.log("Fetched Orders:", data);
         setGetOrder(data || []);
       } catch (error) {
@@ -114,11 +112,6 @@ const AcceptedScreen = () => {
     }
   };
 
-  const handleCancel = (orderId) => {
-    setCancelOrderId(orderId);
-    setShowCancelModal(true);
-  };
-
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.95 },
     visible: { opacity: 1, scale: 1 },
@@ -140,7 +133,7 @@ const AcceptedScreen = () => {
       ) : (
         <OrderDetails
           orders={getorder}
-          onCancel={handleCancel}
+          onCancel={handleCancelService}
           onAccept={handleAcceptService}
         />
       )}
@@ -192,59 +185,11 @@ const AcceptedScreen = () => {
           </motion.div>
         )}
       </AnimatePresence>
-
-      <AnimatePresence>
-        {" "}
-        {showCancelModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
-          >
-            {" "}
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white p-6 rounded-2xl shadow-2xl w-[90%] max-w-sm text-center"
-            >
-              {" "}
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                {" "}
-                Are you sure you want to Cancel this order?{" "}
-              </h3>{" "}
-              <div className="flex justify-center gap-4">
-                {" "}
-                <button
-                  onClick={() => {
-                    setShowCancelModal(false);
-                    handleCancelService(cancelOrderId);
-                  }}
-                  className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
-                >
-                  {" "}
-                  Yes{" "}
-                </button>{" "}
-                <button
-                  onClick={() => setShowCancelModal(false)}
-                  className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
-                >
-                  {" "}
-                  Close{" "}
-                </button>{" "}
-              </div>{" "}
-            </motion.div>{" "}
-          </motion.div>
-        )}{" "}
-      </AnimatePresence>
     </div>
   );
 };
 
-export default AcceptedScreen;
+export default CanceledScreen;
 
 // ==========================
 // ✅ OrderDetails Component

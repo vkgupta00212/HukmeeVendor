@@ -16,6 +16,7 @@ import UpdateCurrentLocations from "../backend/updatelocation/updatelocation.js"
 import ShowLeads from "../backend/order/showleads.js";
 import OnService from "../component/vendor/onservice.jsx";
 import CompletedScreen from "../component/vendor/completed.jsx";
+import CanceledScreen from "../component/vendor/canceled.jsx";
 
 // Hook to track window size
 const useWindowSize = () => {
@@ -58,6 +59,8 @@ const Index = () => {
         return <DeclinedScreen />;
       case "completed":
         return <CompletedScreen />;
+      case "canceled":
+        return <CanceledScreen />;
       default:
         return null;
     }
@@ -176,6 +179,14 @@ const Index = () => {
   const handlePopupClose = () => {
     setShowPopupCard(false);
     setPopupData(null);
+  };
+
+  const handleCancel = () => {
+    // localStorage.removeItem("isLoggedIn");
+    // localStorage.removeItem("userPhone");
+    // setIsLoggedIn(false);
+    // navigate("/");
+    setShowCancelModal(true);
   };
 
   // Modal variants

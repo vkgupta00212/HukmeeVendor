@@ -10,6 +10,7 @@ const TabBar = ({ onTabChange }) => {
     { id: "onservice", label: "On Service" },
     { id: "declined", label: "Declined" },
     { id: "completed", label: "Completed" },
+    { id: "canceled", label: "Canceled" },
   ];
 
   const handleTabClick = (tabId) => {

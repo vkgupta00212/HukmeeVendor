@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { FaEdit, FaTimes, FaSave } from "react-icons/fa";
 import GetUser from "../../backend/authentication/getuser";
 import UpdateVendor from "../../backend/authentication/updatevendor";
+import Colors from "../core/constant";
 
 const PersonalDetails = () => {
   const number = localStorage.getItem("userPhone") || "";
@@ -89,7 +90,7 @@ const PersonalDetails = () => {
             </h3>
             <button
               onClick={handleEditClick}
-              className="flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg hover:bg-indigo-200 transition font-medium"
+              className="flex items-center gap-2 bg-orange-100 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-200 transition font-medium"
             >
               <FaEdit /> Edit
             </button>
@@ -137,7 +138,7 @@ const PersonalDetails = () => {
                   className={`w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:outline-none ${
                     !item.editable
                       ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                      : "focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm"
+                      : "focus:ring-2 focus:ring-orange-500 bg-white shadow-sm"
                   }`}
                 />
               </div>
@@ -146,7 +147,7 @@ const PersonalDetails = () => {
           <div className="text-center mt-8">
             <button
               onClick={handleSave}
-              className="flex items-center gap-2 mx-auto bg-green-600 text-white px-6 py-3 rounded-full hover:bg-green-700 transition font-medium"
+              className={`flex items-center gap-2 mx-auto bg-${Colors.primaryMain} text-white px-6 py-3 rounded-full hover:bg-or transition font-medium`}
             >
               <FaSave /> Save Changes
             </button>

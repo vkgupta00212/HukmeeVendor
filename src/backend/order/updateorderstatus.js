@@ -2,6 +2,8 @@ import axios from "axios";
 
 const UpdateOrders = async ({
   OrderID,
+  Address = "",
+  Slot = "",
   Status,
   VendorPhone,
   BeforVideo = "",
@@ -9,20 +11,23 @@ const UpdateOrders = async ({
   OTP = "",
   PaymentMethod = "",
 }) => {
-  const formData = new URLSearchParams();
-  formData.append("token", "SWNCMPMSREMXAMCKALVAALI");
-  formData.append("OrderID", OrderID);
-  formData.append("Status", Status);
-  formData.append("VendorPhone", VendorPhone);
-  formData.append("BeforVideo", BeforVideo);
-  formData.append("AfterVideo", AfterVideo);
-  formData.append("OTP", OTP);
-  formData.append("PaymentMethod", PaymentMethod);
+  // Prepare parameters in x-www-form-urlencoded format
+  const params = new URLSearchParams();
+  params.append("token", "SWNCMPMSREMXAMCKALVAALI");
+  params.append("OrderID", OrderID);
+  params.append("Address", Address);
+  params.append("Slot", Slot);
+  params.append("Status", Status);
+  params.append("VendorPhone", VendorPhone);
+  params.append("BeforVideo", BeforVideo);
+  params.append("AfterVideo", AfterVideo);
+  params.append("OTP", OTP);
+  params.append("PaymentMethod", PaymentMethod);
 
   try {
     const response = await axios.post(
       "https://api.hukmee.in/APIs/APIs.asmx/UpdateOrders",
-      formData.toString(),
+      params,
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -30,22 +35,20 @@ const UpdateOrders = async ({
       }
     );
 
-    // Handle JSON or XML-like string response safely
+    // .asmx may return JSON inside text
     let data = response.data;
-
-    // Sometimes .asmx returns stringified JSON — try parsing it
     if (typeof data === "string") {
       try {
         data = JSON.parse(data);
       } catch {
-        // leave as string if it's not valid JSON
+        data = { message: data };
       }
     }
 
-    // Return message only if present
-    return data?.message || data;
+    console.log("✅ UpdateOrders response:", data);
+    return data?.message || "Unknown response";
   } catch (error) {
-    console.error("UpdateOrders Error:", {
+    console.error("❌ UpdateOrders Error:", {
       message: error.message,
       status: error.response?.status,
       data: error.response?.data,
