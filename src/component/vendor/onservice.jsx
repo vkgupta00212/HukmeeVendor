@@ -267,7 +267,7 @@ const OnService = () => {
                   onClick={() => {
                     setShowPaymentModal(false);
                     handlePaymentComplete(paymentOrderId, "Cash");
-                    handleupdatewallet("1200");
+                    handleupdatewallet(amout);
                   }}
                   className="px-4 py-2 text-green-700 rounded-lg bg-green-200 hover:bg-green-700 hover:text-white hover:cursor-pointer transition"
                 >
