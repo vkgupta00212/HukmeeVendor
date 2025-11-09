@@ -4,6 +4,8 @@ import GetOrders from "../../backend/order/getorders";
 import COLORS from "../core/constant";
 import UpdateOrderstatus from "../../backend/order/updateorderstatus";
 import RecordVideo from "../ui/recordvideo";
+import UpdateWallet from "../../backend/getwallet/updatewallet";
+import { Phone } from "lucide-react";
 
 const OnService = () => {
   const [getorder, setGetOrder] = useState([]);
@@ -19,7 +21,7 @@ const OnService = () => {
   const [videoType, setVideoType] = useState("Before");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentOrderId, setPaymentOrderId] = useState(null);
-
+  const [amout, setAmount] = useState(null);
   const otpModalRef = useRef(null);
   const UserID = localStorage.getItem("userPhone");
   const isMobile = window.innerWidth < 768;
@@ -105,9 +107,18 @@ const OnService = () => {
     }, 300);
   };
 
-  const handlePayment = (orderId) => {
+  const handlePayment = (orderId, Amount) => {
     setPaymentOrderId(orderId);
+    setAmount(Amount);
     setShowPaymentModal(true);
+  };
+
+  const handleupdatewallet = (balance) => {
+    try {
+      const response = UpdateWallet(UserID, balance, "Add");
+    } catch (error) {
+      console.error("Cancel Order Error:", error);
+    }
   };
 
   const modalVariants = {
@@ -256,6 +267,7 @@ const OnService = () => {
                   onClick={() => {
                     setShowPaymentModal(false);
                     handlePaymentComplete(paymentOrderId, "Cash");
+                    handleupdatewallet("1200");
                   }}
                   className="px-4 py-2 text-green-700 rounded-lg bg-green-200 hover:bg-green-700 hover:text-white hover:cursor-pointer transition"
                 >
@@ -400,7 +412,9 @@ const OrderDetails = ({
                                 </button>
 
                                 <button
-                                  onClick={() => onPayment(order.OrderID)}
+                                  onClick={() =>
+                                    onPayment(order.OrderID, order.Price)
+                                  }
                                   disabled={order.AfterVideo !== ""}
                                   className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
                                     order.AfterVideo !== ""
