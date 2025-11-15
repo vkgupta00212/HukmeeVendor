@@ -148,11 +148,13 @@ const NearbyScreen = ({ onVendorSelect }) => {
   };
 
   return (
-    <div className="w-full flex flex-col items-center px-4 py-8 bg-gray-50 min-h-screen">
+    <div className="w-full flex flex-col items-center px-4 py-10 bg-gray-50 min-h-screen">
       {/* 🔍 Search bar */}
+      {/* 🔍 Search bar with Search Button */}
       <div className="max-w-md w-full mb-6">
-        <div className="flex items-center border border-gray-300 rounded-lg px-4 py-2 bg-white shadow-sm focus-within:ring-2 focus-within:ring-orange-400 transition-all duration-300">
+        <div className="flex items-center border border-gray-300 rounded-lg px-3 py-2 bg-white shadow-sm focus-within:ring-2 focus-within:ring-orange-400 transition-all duration-300">
           <FiSearch className="text-gray-400 mr-2" size={20} />
+
           <input
             type="text"
             placeholder="Search nearby shops or products..."
@@ -160,6 +162,14 @@ const NearbyScreen = ({ onVendorSelect }) => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+
+          {/* Search Button */}
+          <button
+            onClick={() => setSearchTerm(searchTerm.trim())}
+            className="ml-2 bg-orange-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-orange-600 transition-all"
+          >
+            Search
+          </button>
         </div>
       </div>
 
@@ -196,7 +206,7 @@ const NearbyScreen = ({ onVendorSelect }) => {
           </div>
         ) : (
           <p className="text-center text-gray-500">
-            No nearby vendors found. Try searching for another product.
+            No nearby hubs found. Try searching for another product.
           </p>
         )}
       </div>

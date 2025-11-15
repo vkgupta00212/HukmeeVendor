@@ -352,7 +352,7 @@ const Index = () => {
   return (
     <>
       {user[0]?.verified === "approved" ? (
-        <div className="min-h-screen">
+        <div className="min-h-screen py-10">
           <section className="relative p-[1px]">
             <TabBar onTabChange={setSelectedTab} />
             <div className="mt-6">

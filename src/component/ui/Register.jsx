@@ -29,6 +29,7 @@ const RegisterPage = () => {
     const focusableElements = formElement.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
+    if (!focusableElements.length) return;
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
 
@@ -64,31 +65,58 @@ const RegisterPage = () => {
 
       const reader = new FileReader();
       reader.onload = () => {
-        const base64String = reader.result.replace(
-          /^data:image\/[a-zA-Z]+;base64,/,
-          ""
-        );
+        // reader.result is like "data:image/png;base64,AAA..."
+        const base64String = (reader.result || "")
+          .toString()
+          .replace(/^data:image\/[a-zA-Z]+;base64,/, "");
+
         if (name === "aadhaarFront") {
           setPreviewFront(previewUrl);
           setAadhaarFrontBase64(base64String);
+          // mark in formData (helps for UI/other checks)
+          setFormData((prev) => ({
+            ...prev,
+            aadhaarFront: file.name || "selected",
+          }));
         } else if (name === "aadhaarBack") {
           setPreviewBack(previewUrl);
           setAadhaarBackBase64(base64String);
+          setFormData((prev) => ({
+            ...prev,
+            aadhaarBack: file.name || "selected",
+          }));
         }
       };
       reader.readAsDataURL(file);
     }
   };
 
+  // remove handlers for user to clear selected file
+  const removeAadhaarFront = () => {
+    setPreviewFront(null);
+    setAadhaarFrontBase64("");
+    setFormData((prev) => ({ ...prev, aadhaarFront: "" }));
+  };
+
+  const removeAadhaarBack = () => {
+    setPreviewBack(null);
+    setAadhaarBackBase64("");
+    setFormData((prev) => ({ ...prev, aadhaarBack: "" }));
+  };
+
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = "Name is required";
-    if (!formData.email.match(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/))
+    if (
+      !formData.email.trim() ||
+      !formData.email.match(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/)
+    )
       newErrors.email = "Valid email is required";
     if (!formData.address.trim()) newErrors.address = "Address is required";
-    if (!formData.aadhaarFront)
+    // Validate using base64 states which actually contain the image payload
+    if (!aadhaarFrontBase64 || aadhaarFrontBase64.length < 10)
       newErrors.aadhaarFront = "Aadhaar front image is required";
-    if (!formData.aadhaarBack)
+    if (!aadhaarBackBase64 || aadhaarBackBase64.length < 10)
       newErrors.aadhaarBack = "Aadhaar back image is required";
     return newErrors;
   };
@@ -98,6 +126,10 @@ const RegisterPage = () => {
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      // scroll to first error field optionally
+      const firstKey = Object.keys(validationErrors)[0];
+      const el = formRef.current?.querySelector(`[name="${firstKey}"]`);
+      el?.focus();
       return;
     }
 
@@ -137,13 +169,15 @@ const RegisterPage = () => {
         <button
           onClick={() => navigate(-1)}
           className="absolute top-4 right-4 p-2 rounded-full text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition"
+          aria-label="Close"
         >
           <X className="w-6 h-6" />
         </button>
 
         {/* Title */}
         <h2
-          className={`text-2xl sm:text-3xl font-bold bg-${Color.primaryMain} bg-clip-text text-transparent mb-6`}
+          className="text-2xl sm:text-3xl font-bold mb-6"
+          style={{ color: Color.primaryMain }}
         >
           Register
         </h2>
@@ -153,7 +187,8 @@ const RegisterPage = () => {
           {/* Name */}
           <div>
             <label
-              className={`block text-sm font-medium text-${Color.primaryMain}`}
+              className="block text-sm font-medium"
+              style={{ color: Color.primaryMain }}
             >
               Name
             </label>
@@ -173,7 +208,8 @@ const RegisterPage = () => {
           {/* Email */}
           <div>
             <label
-              className={`block text-sm font-medium text-${Color.primaryMain}`}
+              className="block text-sm font-medium"
+              style={{ color: Color.primaryMain }}
             >
               Email
             </label>
@@ -193,7 +229,8 @@ const RegisterPage = () => {
           {/* Address */}
           <div>
             <label
-              className={`block text-sm font-medium text-${Color.primaryMain}`}
+              className="block text-sm font-medium"
+              style={{ color: Color.primaryMain }}
             >
               Address
             </label>
@@ -213,17 +250,29 @@ const RegisterPage = () => {
           {/* Aadhaar Front */}
           <div>
             <label
-              className={`block text-sm font-medium text-${Color.primaryMain}`}
+              className="block text-sm font-medium"
+              style={{ color: Color.primaryMain }}
             >
               Aadhaar Front Image
             </label>
-            <input
-              type="file"
-              name="aadhaarFront"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none"
-            />
+            <div className="flex items-center gap-3 mt-1">
+              <input
+                type="file"
+                name="aadhaarFront"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="w-full"
+              />
+              {previewFront && (
+                <button
+                  type="button"
+                  onClick={removeAadhaarFront}
+                  className="text-sm px-2 py-1 rounded bg-red-100 text-red-700"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
             {previewFront && (
               <img
                 src={previewFront}
@@ -239,17 +288,29 @@ const RegisterPage = () => {
           {/* Aadhaar Back */}
           <div>
             <label
-              className={`block text-sm font-medium text-${Color.primaryMain}`}
+              className="block text-sm font-medium"
+              style={{ color: Color.primaryMain }}
             >
               Aadhaar Back Image
             </label>
-            <input
-              type="file"
-              name="aadhaarBack"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none"
-            />
+            <div className="flex items-center gap-3 mt-1">
+              <input
+                type="file"
+                name="aadhaarBack"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="w-full"
+              />
+              {previewBack && (
+                <button
+                  type="button"
+                  onClick={removeAadhaarBack}
+                  className="text-sm px-2 py-1 rounded bg-red-100 text-red-700"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
             {previewBack && (
               <img
                 src={previewBack}
@@ -265,7 +326,7 @@ const RegisterPage = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            className={`w-full py-3 bg-${Color.primaryMain} text-white rounded-lg font-semibold shadow-md hover:shadow-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300`}
+            className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300"
           >
             Register
           </button>
