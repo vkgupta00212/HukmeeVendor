@@ -8,14 +8,9 @@ import InsertHubRequest from "../../backend/order/inserthubrequest"; // ✅ API 
 const VendorCard = ({ name, location, distance, onRequest, onLocation }) => {
   return (
     <div className="group flex flex-col items-center transition-all duration-300 hover:scale-[1.03]">
-      <Card className="w-full h-[240px] rounded-2xl overflow-hidden shadow-md hover:shadow-xl bg-white border border-gray-100 transition-all duration-300">
+      <Card className="w-full rounded-2xl overflow-hidden shadow-md hover:shadow-xl bg-white border border-gray-100 transition-all duration-300">
         <CardContent className="flex flex-col justify-between h-full p-4">
           {/* Image */}
-          <img
-            src="https://via.placeholder.com/180x100?text=Shop"
-            alt={name}
-            className="w-full h-[100px] object-cover rounded-xl mb-3"
-          />
 
           {/* Info */}
           <div>
@@ -77,16 +72,29 @@ const NearbyScreen = ({ onVendorSelect }) => {
   useEffect(() => {
     if (!searchTerm.trim()) return;
 
+    let firstLoad = true;
+
     const fetchVendors = async () => {
-      setLoading(true);
+      if (firstLoad) setLoading(true);
+
       try {
         const data = await NearBy({ ProductName: searchTerm, lat, lon });
-        setVendorList(data);
+
+        // ✅ Only update if data actually changed
+        setVendorList((prevList) => {
+          const prevString = JSON.stringify(prevList);
+          const newString = JSON.stringify(data);
+          if (prevString !== newString) {
+            return data;
+          }
+          return prevList; // No change → no re-render → no blink
+        });
       } catch (error) {
         console.error("Error loading vendors:", error);
-        setVendorList([]);
+        if (firstLoad) setVendorList([]);
       } finally {
-        setLoading(false);
+        if (firstLoad) setLoading(false);
+        firstLoad = false;
       }
     };
 
@@ -161,7 +169,7 @@ const NearbyScreen = ({ onVendorSelect }) => {
           className="text-2xl font-bold mb-6 text-center"
           style={{ color: Colors.primaryMain }}
         >
-          Nearby Vendors
+          Nearby Hubs
         </h3>
 
         {loading ? (

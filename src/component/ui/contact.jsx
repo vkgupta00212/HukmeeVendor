@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import GetInTouch from "../../backend/footer/getintouch";
+import Colors from "../core/constant";
 
 const ContactInfo = () => {
   const [contact, setContact] = useState(null);
@@ -43,7 +44,9 @@ const ContactInfo = () => {
   return (
     <div className="min-h-screen bg-gray-100 py-10 font-sans">
       <div className="max-w-2xl mx-auto bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
-        <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent p-6">
+        <h2
+          className={`text-2xl md:text-3xl font-bold bg-${Colors.primaryMain} bg-clip-text text-transparent p-6`}
+        >
           Contact Information
         </h2>
         <div className="p-6">
@@ -54,25 +57,29 @@ const ContactInfo = () => {
                 <span className="text-gray-900">{contact.ID}</span>
               </div> */}
               <div className="flex items-center">
-                <span className="w-32 font-medium text-indigo-600">Phone:</span>
+                <span className={`w-32 font-medium text-${Colors.primaryMain}`}>
+                  Phone:
+                </span>
                 <a
                   href={`tel:${contact.Phone}`}
-                  className="text-blue-600 hover:underline"
+                  className={`text-${Colors.primaryMain} hover:underline`}
                 >
                   {contact.Phone}
                 </a>
               </div>
               <div className="flex items-center">
-                <span className="w-32 font-medium text-indigo-600">Email:</span>
+                <span className={`w-32 font-medium text-${Colors.primaryMain}`}>
+                  Email:
+                </span>
                 <a
                   href={`mailto:${contact.Email}`}
-                  className="text-blue-600 hover:underline"
+                  className={`text-${Colors.primaryMain} hover:underline`}
                 >
                   {contact.Email}
                 </a>
               </div>
               <div className="flex items-center">
-                <span className="w-32 font-medium text-indigo-600">
+                <span className={`w-32 font-medium text-${Colors.primaryMain}`}>
                   Address:
                 </span>
                 <span className="text-gray-900">
@@ -80,40 +87,40 @@ const ContactInfo = () => {
                 </span>
               </div>
               <div className="flex items-center">
-                <span className="w-32 font-medium text-indigo-600">
+                <span className={`w-32 font-medium text-${Colors.primaryMain}`}>
                   Instagram:
                 </span>
                 <a
                   href={contact.Link1}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
+                  className={`text-${Colors.primaryMain} hover:underline`}
                 >
                   {contact.Link1 || "N/A"}
                 </a>
               </div>
               <div className="flex items-center">
-                <span className="w-32 font-medium text-indigo-600">
+                <span className={`w-32 font-medium text-${Colors.primaryMain}`}>
                   Facebook:
                 </span>
                 <a
                   href={contact.Link2}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
+                  className={`text-${Colors.primaryMain} hover:underline`}
                 >
                   {contact.Link2 || "N/A"}
                 </a>
               </div>
               <div className="flex items-center">
-                <span className="w-32 font-medium text-indigo-600">
+                <span className={`w-32 font-medium text-${Colors.primaryMain}`}>
                   Telegram:
                 </span>
                 <a
                   href={contact.Link3}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
+                  className={`text-${Colors.primaryMain} hover:underline`}
                 >
                   {contact.Link3 || "N/A"}
                 </a>

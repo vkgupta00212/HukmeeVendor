@@ -352,8 +352,8 @@ const Index = () => {
   return (
     <>
       {user[0]?.verified === "approved" ? (
-        <div className="min-h-screen bg-gray-50">
-          <section className="relative bg-white p-4">
+        <div className="min-h-screen">
+          <section className="relative p-[1px]">
             <TabBar onTabChange={setSelectedTab} />
             <div className="mt-6">
               <Suspense fallback={<div>Loading...</div>}>
@@ -361,9 +361,9 @@ const Index = () => {
               </Suspense>
             </div>
           </section>
-          <footer className="mt-8 bg-gray-100 z-10 md:hidden">
+          {/* <footer className="mt-8 bg-gray-100 z-10 md:hidden">
             <Footer />
-          </footer>
+          </footer> */}
         </div>
       ) : (
         <VendorVerification />

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import GetWallet from "../../backend/getwallet/getwallet";
 import GetTransaction from "../../backend/gettransaction/gettransaction";
+import Colors from "../core/constant";
 
 const TransactionHistory = () => {
   const [transactions, setTransactions] = useState([]);
@@ -59,7 +60,9 @@ const TransactionHistory = () => {
           <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
             Wallet
           </h3>
-          <span className="text-xl sm:text-2xl font-semibold text-indigo-700">
+          <span
+            className={`text-xl sm:text-2xl font-semibold text-${Colors.primaryMain}`}
+          >
             ₹{wallet[0]?.WalletBalance || 0}
           </span>
         </div>
@@ -73,7 +76,7 @@ const TransactionHistory = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             {/* Header Row */}
-            <thead className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+            <thead className={`bg-${Colors.primaryMain} text-white`}>
               <tr>
                 <th className="px-4 py-4 sm:px-6 sm:py-5">ID</th>
                 <th className="px-4 py-4 sm:px-6 sm:py-5">Transaction ID</th>
@@ -97,7 +100,7 @@ const TransactionHistory = () => {
                     key={txn.id || index}
                     className={`border-b border-gray-200 ${
                       index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                    } hover:bg-indigo-100 transition`}
+                    } hover:bg-orange-100 transition`}
                   >
                     <td className="px-4 py-4 sm:px-6 sm:py-5">{txn.id}</td>
                     <td className="px-4 py-4 sm:px-6 sm:py-5">

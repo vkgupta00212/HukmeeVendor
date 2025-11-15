@@ -4,44 +4,54 @@ import GetOrders from "../../backend/order/getorders";
 import COLORS from "../core/constant";
 import UpdateOrderstatus from "../../backend/order/updateorderstatus";
 import StartServiceVerify from "../ui/startserviceverify";
+import {
+  Package,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 
 const AcceptedScreen = () => {
-  const [getorder, setGetOrder] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showotp, setShowotp] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [otp, setOtp] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelOrderId, setCancelOrderId] = useState(null);
 
-  const otpModalRef = useRef(null);
   const UserID = localStorage.getItem("userPhone");
   const isMobile = window.innerWidth < 768;
 
-  // Prevent scroll when OTP modal is open
+  // Prevent scroll when modal open
   useEffect(() => {
-    const active = showotp;
-    document.body.classList.toggle("overflow-hidden", active);
-    return () => document.body.classList.remove("overflow-hidden");
-  }, [showotp]);
+    document.body.style.overflow =
+      showOtpModal || showCancelModal ? "hidden" : "unset";
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [showOtpModal, showCancelModal]);
 
   // Fetch orders
   useEffect(() => {
-    const fetchgetorder = async () => {
+    const fetchOrders = async () => {
+      if (!UserID) return;
       setIsLoading(true);
       try {
         const data = await GetOrders(UserID, "Done");
-        console.log("Fetched Orders:", data);
-        setGetOrder(data || []);
+        setOrders(data || []);
       } catch (error) {
         console.error("Error fetching orders:", error);
-        setGetOrder([]);
+        setOrders([]);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
-    if (UserID) fetchgetorder();
+    fetchOrders();
   }, [UserID]);
 
   // Cancel Order
@@ -57,43 +67,35 @@ const AcceptedScreen = () => {
         PaymentMethod: "",
       });
 
-      console.log("Cancel Response:", response);
       alert(response?.message || "Order cancelled successfully!");
-
-      const refreshedData = await GetOrders(UserID, "Done");
-      setGetOrder(refreshedData || []);
+      const refreshed = await GetOrders(UserID, "Done");
+      setOrders(refreshed || []);
     } catch (error) {
-      console.error("Cancel Order Error:", error);
-      alert("Failed to cancel the order.");
+      console.error("Cancel error:", error);
+      alert("Failed to cancel order.");
+    } finally {
+      setShowCancelModal(false);
     }
   };
 
-  // Accept/Start Order
-  const handleAcceptService = async (order) => {
-    // console.log("Starting service for order:", order);
-
-    // safely extract the value
-    const otpValue = order?.OTP || order?.otp || (order?._doc?.OTP ?? null);
-    // console.log("Extracted OTP:", otpValue);
-
+  // Start Service
+  const handleStartService = (order) => {
+    const otpValue = order?.OTP || order?.otp || order?._doc?.OTP || null;
     setOtp(otpValue);
     setSelectedOrder(order);
     setIsProcessing(true);
 
     setTimeout(() => {
       setIsProcessing(false);
-      setShowotp(true);
-    }, 500);
+      setShowOtpModal(true);
+    }, 400);
   };
 
   const handleOtpSuccess = async () => {
-    if (!selectedOrder) {
-      alert("No order selected!");
-      return;
-    }
+    if (!selectedOrder) return;
 
     try {
-      const response = await UpdateOrderstatus({
+      await UpdateOrderstatus({
         OrderID: selectedOrder.OrderID,
         Status: "Onservice",
         VendorPhone: UserID,
@@ -102,254 +104,322 @@ const AcceptedScreen = () => {
         OTP: "",
         PaymentMethod: "",
       });
-
-      // console.log("Update response:", response);
-      // alert(`Order ${selectedOrder.OrderID} status updated to Onservice`);
       window.location.reload();
     } catch (error) {
-      console.error("Error in OTP success handling:", error);
-      alert("Failed to update order status. Please try again.");
+      console.error("OTP success error:", error);
+      alert("Failed to start service.");
     } finally {
-      setShowotp(false);
+      setShowOtpModal(false);
     }
   };
 
-  const handleCancel = (orderId) => {
+  const openCancelModal = (orderId) => {
     setCancelOrderId(orderId);
     setShowCancelModal(true);
   };
 
-  const modalVariants = {
-    hidden: { opacity: 0, scale: 0.95 },
-    visible: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 0.95 },
-  };
+  return (
+    <div className={`${COLORS.bgGray} min-h-screen py-6 px-4`}>
+      <div className="max-w-7xl mx-auto">
+        <motion.h1
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`text-3xl md:text-4xl font-bold bg-gradient-to-r ${COLORS.gradientFrom} ${COLORS.gradientTo} bg-clip-text text-transparent mb-8 text-center`}
+        >
+          Accepted Orders
+        </motion.h1>
 
-  const bottomSheetVariants = {
-    hidden: { y: "100%", opacity: 0 },
-    visible: { y: 0, opacity: 1 },
-    exit: { y: "100%", opacity: 0 },
+        {isLoading ? (
+          <LoadingSkeleton />
+        ) : orders.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <AnimatePresence>
+              {orders.map((order, index) => (
+                <OrderCard
+                  key={order.OrderID}
+                  order={order}
+                  index={index}
+                  onStart={handleStartService}
+                  onCancel={openCancelModal}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+
+      {/* OTP Modal */}
+      <OTPModal
+        isOpen={showOtpModal}
+        onClose={() => setShowOtpModal(false)}
+        onVerify={handleOtpSuccess}
+        otp={otp}
+        isMobile={isMobile}
+        isProcessing={isProcessing}
+      />
+
+      {/* Cancel Confirmation Modal */}
+      <CancelModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={() => handleCancelService(cancelOrderId)}
+      />
+    </div>
+  );
+};
+
+// ==========================
+// Order Card Component
+// ==========================
+const OrderCard = ({ order, index, onStart, onCancel }) => {
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
   };
 
   return (
-    <div className={`${COLORS.bgGray} py-10`}>
-      {isLoading ? (
-        <div className={`text-center ${COLORS.gradientFrom} font-semibold`}>
-          Loading orders...
-        </div>
-      ) : (
-        <OrderDetails
-          orders={getorder}
-          onCancel={handleCancel}
-          onAccept={handleAcceptService}
-        />
-      )}
-
-      {/* ✅ OTP Modal Here */}
-      <AnimatePresence>
-        {showotp && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-center items-center"
+    <motion.div
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      exit="hidden"
+      transition={{ delay: index * 0.1 }}
+      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden"
+    >
+      <div className="p-5">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="font-bold text-lg text-gray-800">
+              #{order.OrderID}
+            </h3>
+            <p className="text-sm text-gray-500">User: {order.UserID}</p>
+          </div>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
+              order.Status === "Done"
+                ? "bg-green-100 text-green-700"
+                : "bg-yellow-100 text-yellow-700"
+            }`}
           >
-            {isMobile ? (
-              <motion.div
-                variants={bottomSheetVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                transition={{ duration: 0.3 }}
-                className="fixed bottom-0 left-0 right-0 w-full h-[70vh] bg-white rounded-t-2xl shadow-2xl p-6 max-w-md mx-auto"
-                ref={otpModalRef}
-              >
-                <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
-                <StartServiceVerify
-                  onVerify={handleOtpSuccess}
-                  onClose={() => setShowotp(false)}
-                  otpp={otp}
-                />
-              </motion.div>
+            {order.Status === "Done" ? (
+              <CheckCircle size={14} />
             ) : (
-              <motion.div
-                variants={modalVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                transition={{ duration: 0.3 }}
-                className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full"
-                ref={otpModalRef}
-              >
-                <StartServiceVerify
-                  onVerify={handleOtpSuccess}
-                  onClose={() => setShowotp(false)}
-                  otpp={otp}
-                />
-              </motion.div>
+              <Clock size={14} />
+            )}
+            {order.Status}
+          </span>
+        </div>
+
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Service</span>
+            <span className="font-medium">{order.ItemName}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Type</span>
+            <span className="font-medium capitalize">{order.OrderType}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Price</span>
+            <span className="font-semibold text-green-600">₹{order.Price}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Qty</span>
+            <span className="font-medium">{order.Quantity}</span>
+          </div>
+        </div>
+
+        {order.Status === "Done" && (
+          <div className="flex gap-3 mt-5">
+            <button
+              onClick={() => onStart(order)}
+              className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-2.5 rounded-xl font-medium text-sm hover:shadow-md transition flex items-center justify-center gap-2"
+            >
+              <Package size={16} />
+              Start Service
+            </button>
+            <button
+              onClick={() => onCancel(order.OrderID)}
+              className="flex-1 bg-red-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-red-600 transition flex items-center justify-center gap-2"
+            >
+              <XCircle size={16} />
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+// ==========================
+// Loading Skeleton
+// ==========================
+const LoadingSkeleton = () => (
+  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    {[1, 2, 3].map((i) => (
+      <div
+        key={i}
+        className="bg-white rounded-2xl shadow-lg p-5 animate-pulse border border-gray-100"
+      >
+        <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+        <div className="space-y-2">
+          <div className="h-4 bg-gray-200 rounded"></div>
+          <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+          <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+        </div>
+        <div className="flex gap-3 mt-5">
+          <div className="h-10 bg-gray-200 rounded-xl flex-1"></div>
+          <div className="h-10 bg-gray-200 rounded-xl flex-1"></div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+// ==========================
+// Empty State
+// ==========================
+const EmptyState = () => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.9 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className="text-center py-16"
+  >
+    <div className="bg-gray-100 w-32 h-32 rounded-full mx-auto mb-6 flex items-center justify-center">
+      <Package size={48} className="text-gray-400" />
+    </div>
+    <h3 className="text-xl font-semibold text-gray-700 mb-2">
+      No Accepted Orders
+    </h3>
+    <p className="text-gray-500 max-w-md mx-auto">
+      When customers accept your service, their orders will appear here ready to
+      start.
+    </p>
+  </motion.div>
+);
+
+// ==========================
+// OTP Modal (Bottom Sheet on Mobile)
+// ==========================
+const OTPModal = ({
+  isOpen,
+  onClose,
+  onVerify,
+  otp,
+  isMobile,
+  isProcessing,
+}) => {
+  const bottomSheet = {
+    hidden: { y: "100%" },
+    visible: { y: 0 },
+    exit: { y: "100%" },
+  };
+
+  const modal = {
+    hidden: { scale: 0.95, opacity: 0 },
+    visible: { scale: 1, opacity: 1 },
+    exit: { scale: 0.95, opacity: 0 },
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            variants={isMobile ? bottomSheet : modal}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className={`${
+              isMobile
+                ? "fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white rounded-t-3xl shadow-2xl p-6 pb-8"
+                : "bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {isMobile && (
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-5" />
+            )}
+
+            {isProcessing ? (
+              <div className="flex flex-col items-center py-8">
+                <Loader2 className="animate-spin text-blue-600" size={40} />
+                <p className="mt-3 text-gray-600">Preparing service...</p>
+              </div>
+            ) : (
+              <StartServiceVerify
+                onVerify={onVerify}
+                onClose={onClose}
+                otpp={otp}
+              />
             )}
           </motion.div>
-        )}
-      </AnimatePresence>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
 
-      <AnimatePresence>
-        {" "}
-        {showCancelModal && (
+// ==========================
+// Cancel Confirmation Modal
+// ==========================
+const CancelModal = ({ isOpen, onClose, onConfirm }) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={onClose}
+        >
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center"
+            onClick={(e) => e.stopPropagation()}
           >
-            {" "}
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white p-6 rounded-2xl shadow-2xl w-[90%] max-w-sm text-center"
-            >
-              {" "}
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                {" "}
-                Are you sure you want to Cancel this order?{" "}
-              </h3>{" "}
-              <div className="flex justify-center gap-4">
-                {" "}
-                <button
-                  onClick={() => {
-                    setShowCancelModal(false);
-                    handleCancelService(cancelOrderId);
-                  }}
-                  className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
-                >
-                  {" "}
-                  Yes{" "}
-                </button>{" "}
-                <button
-                  onClick={() => setShowCancelModal(false)}
-                  className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
-                >
-                  {" "}
-                  Close{" "}
-                </button>{" "}
-              </div>{" "}
-            </motion.div>{" "}
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="text-red-600" size={32} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              Cancel This Order?
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              This action cannot be undone. The customer will be notified.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={onConfirm}
+                className="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-medium hover:bg-red-700 transition"
+              >
+                Yes, Cancel
+              </button>
+              <button
+                onClick={onClose}
+                className="flex-1 bg-gray-200 text-gray-700 py-2.5 rounded-xl font-medium hover:bg-gray-300 transition"
+              >
+                Keep Order
+              </button>
+            </div>
           </motion.div>
-        )}{" "}
-      </AnimatePresence>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
 export default AcceptedScreen;
-
-// ==========================
-// ✅ OrderDetails Component
-// ==========================
-const OrderDetails = ({ orders, onCancel, onAccept }) => {
-  const headers = [
-    "OrderID",
-    "UserID",
-    "OrderType",
-    "ItemName",
-    "Price",
-    "Quantity",
-    "Status",
-  ];
-
-  return (
-    <div
-      className={`max-w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden border ${COLORS.borderGray}`}
-    >
-      <h2
-        className={`text-2xl md:text-3xl font-bold bg-gradient-to-r ${COLORS.gradientFrom} ${COLORS.gradientTo} bg-clip-text text-transparent p-6`}
-      >
-        Orders
-      </h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className={COLORS.tableHeadBg}>
-            <tr>
-              {headers.map((header) => (
-                <th
-                  key={header}
-                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${COLORS.tableHeadText}`}
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {orders.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={headers.length}
-                  className={`px-6 py-4 text-center ${COLORS.textGray}`}
-                >
-                  No orders found
-                </td>
-              </tr>
-            ) : (
-              orders.map((order) => (
-                <tr key={order.ID} className="hover:bg-gray-50 transition">
-                  <td className={`px-6 py-4 text-sm ${COLORS.textGrayDark}`}>
-                    {order.OrderID}
-                  </td>
-                  <td className={`px-6 py-4 text-sm ${COLORS.textGrayDark}`}>
-                    {order.UserID}
-                  </td>
-                  <td className={`px-6 py-4 text-sm ${COLORS.textGrayDark}`}>
-                    {order.OrderType}
-                  </td>
-                  <td className={`px-6 py-4 text-sm ${COLORS.textGrayDark}`}>
-                    {order.ItemName}
-                  </td>
-                  <td className={`px-6 py-4 text-sm ${COLORS.textGrayDark}`}>
-                    ₹{order.Price}
-                  </td>
-                  <td className={`px-6 py-4 text-sm ${COLORS.textGrayDark}`}>
-                    {order.Quantity}
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          order.Status === "Pending"
-                            ? `${COLORS.pendingBg} ${COLORS.pendingText}`
-                            : `${COLORS.successBg} ${COLORS.successText}`
-                        }`}
-                      >
-                        {order.Status}
-                      </span>
-
-                      {order.Status === "Done" && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => onAccept(order)}
-                            className="bg-green-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-green-600 transition"
-                          >
-                            Start Service
-                          </button>
-                          <button
-                            onClick={() => onCancel(order.OrderID)}
-                            className="bg-red-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-red-600 transition"
-                          >
-                            Cancel Service
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};

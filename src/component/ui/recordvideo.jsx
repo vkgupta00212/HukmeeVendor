@@ -1,6 +1,18 @@
 import { useState, useEffect, useRef } from "react";
-import { Video, StopCircle, Upload, RotateCcw, Clock, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Video,
+  StopCircle,
+  Upload,
+  RotateCcw,
+  Camera,
+  CameraOff,
+  FlipHorizontal2,
+  Zap,
+  ZapOff,
+  X,
+  Loader2,
+} from "lucide-react";
 import UpdateOrders from "../../backend/order/updateorderstatus";
 
 const RecordVideo = ({
@@ -19,44 +31,69 @@ const RecordVideo = ({
   const [chunks, setChunks] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [facingMode, setFacingMode] = useState("user"); // 'user' or 'environment'
+  const [flashOn, setFlashOn] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const timerRef = useRef(null);
+  const trackRef = useRef(null);
 
-  // ✅ Initialize camera
+  // Initialize camera
   useEffect(() => {
     const initCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+          video: { facingMode },
           audio: true,
         });
         streamRef.current = stream;
-        if (videoRef.current) videoRef.current.srcObject = stream;
+        trackRef.current = stream.getVideoTracks()[0];
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+
+        // Flash support (limited in browsers)
+        if (trackRef.current && trackRef.current.applyConstraints) {
+          try {
+            await trackRef.current.applyConstraints({
+              advanced: [{ torch: flashOn }],
+            });
+          } catch (e) {
+            console.warn("Flash not supported");
+          }
+        }
       } catch (err) {
-        alert("Camera access denied!");
+        alert("Camera access denied or not available!");
         console.error(err);
       }
     };
+
     initCamera();
 
     return () => {
-      if (streamRef.current)
+      if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
+      }
       clearInterval(timerRef.current);
     };
-  }, []);
+  }, [facingMode, flashOn]);
 
-  // ✅ Start recording
+  // Start Recording
   const handleStartRecording = () => {
     if (!streamRef.current) return;
 
-    const recorder = new MediaRecorder(streamRef.current);
+    const recorder = new MediaRecorder(streamRef.current, {
+      mimeType: "video/webm;codecs=vp9",
+    });
+
     const localChunks = [];
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) localChunks.push(e.data);
     };
+
     recorder.onstop = () => {
       const blob = new Blob(localChunks, { type: "video/webm" });
       const url = URL.createObjectURL(blob);
@@ -68,43 +105,75 @@ const RecordVideo = ({
     setMediaRecorder(recorder);
     setIsRecording(true);
     setRecordingTime(0);
-    timerRef.current = setInterval(
-      () => setRecordingTime((prev) => prev + 1),
-      1000
-    );
+
+    timerRef.current = setInterval(() => {
+      setRecordingTime((prev) => prev + 1);
+    }, 1000);
   };
 
-  // ✅ Stop recording
+  // Stop Recording
   const handleStopRecording = () => {
-    if (mediaRecorder) {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
       mediaRecorder.stop();
       setIsRecording(false);
       clearInterval(timerRef.current);
     }
   };
 
-  // ✅ Reset
-  const handleResetRecording = () => {
+  // Reset
+  const handleReset = () => {
     setVideoURL(null);
     setChunks([]);
     setRecordingTime(0);
-    if (videoRef.current && streamRef.current)
-      videoRef.current.srcObject = streamRef.current;
+    setUploadProgress(0);
   };
 
-  // ✅ Convert Blob to Base64
+  // Flip Camera
+  const flipCamera = () => {
+    setFacingMode((prev) => (prev === "user" ? "environment" : "user"));
+    handleReset();
+  };
+
+  // Toggle Flash
+  const toggleFlash = async () => {
+    if (!trackRef.current) return;
+    const newFlash = !flashOn;
+    setFlashOn(newFlash);
+    try {
+      await trackRef.current.applyConstraints({
+        advanced: [{ torch: newFlash }],
+      });
+    } catch (e) {
+      alert("Flash not supported on this device.");
+    }
+  };
+
+  // Convert Blob to Base64 with progress simulation
   const blobToBase64 = (blob) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result.split(",")[1]);
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 15;
+        setUploadProgress(Math.min(progress, 90));
+        if (progress >= 90) clearInterval(interval);
+      }, 200);
+
+      reader.onloadend = () => {
+        clearInterval(interval);
+        setUploadProgress(100);
+        setTimeout(() => resolve(reader.result.split(",")[1]), 300);
+      };
       reader.readAsDataURL(blob);
     });
   };
 
-  // ✅ Upload function
+  // Upload Video
   const handleUpload = async () => {
-    if (!chunks.length) return alert("No video recorded!");
+    if (!chunks.length) return alert("No video to upload!");
+
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
       const blob = new Blob(chunks, { type: "video/webm" });
@@ -120,40 +189,29 @@ const RecordVideo = ({
         PaymentMethod,
       };
 
-      // 🔹 Step 1: Upload the video
       const response = await UpdateOrders(payload);
-      console.log("📤 Upload Response:", response);
+      console.log("Upload Response:", response);
 
-      // 🔹 Step 2: If it's an After video → update status to Completed
       if (type === "After") {
-        const completePayload = {
-          OrderID,
-          Status: "Completed",
-          VendorPhone,
-        };
-        const completeResponse = await UpdateOrders(completePayload);
-        console.log("✅ Order marked as Completed:", completeResponse);
+        const completePayload = { OrderID, Status: "Completed", VendorPhone };
+        await UpdateOrders(completePayload);
+        alert("Service completed!");
         window.location.reload();
       }
 
-      alert(`✅ ${type} video uploaded successfully!`);
+      alert(`${type} video uploaded successfully!`);
       onUploaded?.(OrderID);
-
-      // Stop camera after upload
-      if (streamRef.current)
-        streamRef.current.getTracks().forEach((track) => track.stop());
-
       onClose?.();
-      window.location.reload();
     } catch (err) {
-      console.error("❌ Upload error:", err);
-      alert("❌ Upload failed!");
+      console.error("Upload failed:", err);
+      alert("Upload failed. Please try again.");
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
-  // ✅ Timer formatter
+  // Format time
   const formatTime = (seconds) => {
     const m = String(Math.floor(seconds / 60)).padStart(2, "0");
     const s = String(seconds % 60).padStart(2, "0");
@@ -166,86 +224,170 @@ const RecordVideo = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
+        className="fixed inset-0 bg-black/70 backdrop-blur-xl flex items-center justify-center z-50 p-4"
+        onClick={onClose}
       >
-        <motion.div className="bg-white rounded-2xl p-6 w-full max-w-md relative shadow-xl">
-          {/* Close Button */}
+        <motion.div
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.9, y: 20 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-6 w-full max-w-md shadow-2xl border border-white/10 relative overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Glass Header */}
+          <div className="absolute inset-0 bg-white/5 backdrop-blur-3xl -z-10" />
+
           <button
-            className="absolute top-4 right-4 text-gray-500 hover:text-black"
             onClick={onClose}
-            disabled={isUploading}
+            disabled={isUploading || isRecording}
+            className="absolute top-4 right-4 text-white/70 hover:text-white transition z-10"
           >
-            <X size={20} />
+            <X size={22} />
           </button>
 
-          <h2 className="text-lg font-semibold text-center mb-4">
-            Record {type} Video
-          </h2>
+          <div className="text-center mb-5">
+            <h2 className="text-2xl font-bold text-white flex items-center justify-center gap-2">
+              <Camera size={28} />
+              Record {type} Video
+            </h2>
+            <p className="text-sm text-white/60 mt-1">Order #{OrderID}</p>
+          </div>
 
-          {/* Video Display */}
-          <div className="relative">
+          {/* Video Preview */}
+          <div className="relative rounded-2xl overflow-hidden bg-black/50 backdrop-blur-sm shadow-inner">
             {!videoURL ? (
               <video
                 ref={videoRef}
                 autoPlay
                 muted
-                className="w-full h-60 bg-black rounded-lg object-cover"
+                playsInline
+                className="w-full h-64 object-cover"
               />
             ) : (
               <video
                 src={videoURL}
                 controls
-                className="w-full h-60 bg-black rounded-lg object-cover"
+                className="w-full h-64 object-cover rounded-2xl"
               />
             )}
 
+            {/* Recording Indicator */}
             {isRecording && (
-              <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-3 py-1 rounded-full flex items-center gap-2">
-                <Clock size={12} /> {formatTime(recordingTime)}
+              <div className="absolute top-3 left-3 flex items-center gap-2 bg-red-600/90 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm">
+                <motion.div
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className="w-2.5 h-2.5 bg-white rounded-full"
+                />
+                REC {formatTime(recordingTime)}
               </div>
+            )}
+
+            {/* Flash Overlay */}
+            {flashOn && !videoURL && (
+              <div className="absolute inset-0 bg-white/20 pointer-events-none" />
             )}
           </div>
 
-          {/* Buttons */}
-          <div className="flex justify-center gap-3 mt-4">
-            {!isRecording && !videoURL && (
-              <button
-                onClick={handleStartRecording}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-              >
-                <Video size={18} /> Start
-              </button>
-            )}
-
-            {isRecording && (
-              <button
-                onClick={handleStopRecording}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-              >
-                <StopCircle size={18} /> Stop
-              </button>
-            )}
-
-            {!isRecording && videoURL && (
-              <>
+          {/* Controls */}
+          <div className="mt-5 space-y-4">
+            {/* Camera Controls */}
+            {!videoURL && (
+              <div className="flex justify-center gap-3">
                 <button
-                  onClick={handleResetRecording}
-                  className="bg-gray-500 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                  onClick={flipCamera}
+                  className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm transition"
+                  title="Flip Camera"
                 >
-                  <RotateCcw size={18} /> Reset
+                  <FlipHorizontal2 size={20} />
                 </button>
                 <button
-                  onClick={handleUpload}
-                  disabled={isUploading}
-                  className={`${
-                    isUploading
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-orange-500 hover:bg-orange-600"
-                  } text-white px-4 py-2 rounded-lg flex items-center gap-2`}
+                  onClick={toggleFlash}
+                  className={`p-3 rounded-full backdrop-blur-sm transition ${
+                    flashOn
+                      ? "bg-yellow-500/80 text-yellow-900"
+                      : "bg-white/10 hover:bg-white/20 text-white"
+                  }`}
+                  title="Toggle Flash"
                 >
-                  <Upload size={18} /> {isUploading ? "Uploading..." : "Upload"}
+                  {flashOn ? <Zap size={20} /> : <ZapOff size={20} />}
                 </button>
-              </>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex justify-center gap-3">
+              {!isRecording && !videoURL && (
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleStartRecording}
+                  className="bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-3 rounded-full font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transition"
+                >
+                  <Video size={20} />
+                  Start Recording
+                </motion.button>
+              )}
+
+              {isRecording && (
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleStopRecording}
+                  className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-6 py-3 rounded-full font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transition"
+                >
+                  <StopCircle size={20} />
+                  Stop
+                </motion.button>
+              )}
+
+              {!isRecording && videoURL && (
+                <>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleReset}
+                    className="bg-white/10 hover:bg-white/20 text-white px-5 py-3 rounded-full font-medium flex items-center gap-2 backdrop-blur-sm transition"
+                  >
+                    <RotateCcw size={18} />
+                    Retake
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleUpload}
+                    disabled={isUploading}
+                    className={`px-6 py-3 rounded-full font-semibold flex items-center gap-2 shadow-lg transition ${
+                      isUploading
+                        ? "bg-gray-600 text-white/70 cursor-not-allowed"
+                        : "bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:shadow-xl"
+                    }`}
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 size={20} className="animate-spin" />
+                        {uploadProgress}%
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={20} />
+                        Upload
+                      </>
+                    )}
+                  </motion.button>
+                </>
+              )}
+            </div>
+
+            {/* Progress Bar */}
+            {isUploading && (
+              <div className="mt-3">
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${uploadProgress}%` }}
+                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-600"
+                  />
+                </div>
+              </div>
             )}
           </div>
         </motion.div>

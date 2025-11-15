@@ -8,7 +8,7 @@ const RegisterPage = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    address: "",  
+    address: "",
     aadhaarFront: "",
     aadhaarBack: "",
   });
@@ -86,10 +86,10 @@ const RegisterPage = () => {
     if (!formData.email.match(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/))
       newErrors.email = "Valid email is required";
     if (!formData.address.trim()) newErrors.address = "Address is required";
-    // if (!formData.aadhaarFront)
-    //   newErrors.aadhaarFront = "Aadhaar front image is required";
-    // if (!formData.aadhaarBack)
-    //   newErrors.aadhaarBack = "Aadhaar back image is required";
+    if (!formData.aadhaarFront)
+      newErrors.aadhaarFront = "Aadhaar front image is required";
+    if (!formData.aadhaarBack)
+      newErrors.aadhaarBack = "Aadhaar back image is required";
     return newErrors;
   };
 

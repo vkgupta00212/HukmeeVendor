@@ -3,7 +3,9 @@ import Home from "../pages/Index";
 import SkinAnalyzer from "./ui/skinanalyzer";
 import Services from "../pages/Index";
 import ProductScreen from "./ui/products";
+import Nearby from "./vendor/nearby";
 import UserProfile from "./ui/userprofile";
+import { MdNearMe } from "react-icons/md";
 
 const navItems = [
   {
@@ -14,6 +16,16 @@ const navItems = [
       </div>
     ),
     component: <Home />,
+    notification: false,
+  },
+  {
+    label: "Nearby hubs",
+    icon: (
+      <div className="text-[10px] w-8 h-8 bg-gradient-to-br from-[#FA7D09] to-[#E56A00] text-white flex items-center justify-center rounded-full font-bold text-lg transition-all duration-300 group-hover:scale-110">
+        <MdNearMe size={15} />
+      </div>
+    ),
+    component: <Nearby />,
     notification: false,
   },
   {

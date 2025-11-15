@@ -73,7 +73,7 @@ const Layout = ({ children }) => {
       )}
 
       {/* Footer */}
-      <footer className="mt-8 bg-gray-100 z-10">
+      <footer className="mdd:hidden mt-8 bg-gray-100 z-10">
         <Footer />
       </footer>
     </div>

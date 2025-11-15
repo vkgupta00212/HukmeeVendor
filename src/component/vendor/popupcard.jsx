@@ -29,51 +29,121 @@ const Popupcard = ({ onClose }) => {
 
   const UserID = localStorage.getItem("userPhone");
 
+  // Keep latest leads in a ref (safe to read inside intervals)
+  const leadsRef = useRef([]);
+  useEffect(() => {
+    leadsRef.current = leadsDetails || [];
+  }, [leadsDetails]);
+
+  // interval ref so we can clear it from different places
+  const intervalRef = useRef(null);
+
   // Fetch leads
   useEffect(() => {
+    let mounted = true;
     const fetchLeadsDetails = async () => {
       try {
         const data = await ShowLeads(UserID, "Pending");
+        if (!mounted) return;
         setLeadsDetails(data || []);
+        // reset timer only when there are pending leads
+        if (data && data.length > 0) {
+          setTimer(60);
+        }
       } catch (error) {
         console.error("Error fetching leads details:", error);
       }
     };
     fetchLeadsDetails();
+    return () => {
+      mounted = false;
+    };
   }, [UserID]);
 
-  // Timer logic (auto decline)
-  const leadsRef = useRef(leadsDetails);
-  useEffect(() => {
-    leadsRef.current = leadsDetails;
-  }, [leadsDetails]);
+  // Auto-decline helper used both by timer and (if needed) elsewhere
+  const autoDecline = async () => {
+    const currentLeads = leadsRef.current;
+    if (!currentLeads || currentLeads.length === 0) {
+      onClose?.();
+      return;
+    }
 
-  useEffect(() => {
-    if (timer <= 0) return;
+    const orderId = currentLeads[0].OrderID;
+    setLoading(true);
+    try {
+      const response = await DeclineLeads(orderId, UserID);
+      console.log("⏱ Auto-decline response:", response);
+      // Optional: match the behaviour of manual decline (reload if successful)
+      if (response?.message === "Lead Declined Successfully") {
+        // quiet auto-decline (no alert), refresh to reflect change
+        window.location.reload();
+      } else {
+        console.warn("Auto-decline returned unexpected response:", response);
+        onClose?.();
+      }
+    } catch (err) {
+      console.error("❌ Auto-decline error:", err);
+      onClose?.();
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const countdown = setInterval(() => {
+  // Timer logic (auto decline when timer reaches 0)
+  useEffect(() => {
+    // clear any existing interval first
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    // Only start countdown when there are pending leads
+    if (!leadsRef.current || leadsRef.current.length === 0) {
+      return;
+    }
+
+    // If timer is already 0 do immediate auto-decline
+    if (timer <= 0) {
+      autoDecline();
+      return;
+    }
+
+    intervalRef.current = setInterval(() => {
       setTimer((prev) => {
         if (prev <= 1) {
-          clearInterval(countdown);
-          const currentLeads = leadsRef.current;
-          if (currentLeads && currentLeads.length > 0) {
-            const orderId = currentLeads[0].OrderID;
-            DeclineLeads(orderId, UserID)
-              .then((res) => console.log("⏱ Auto-declined:", res?.message))
-              .catch((err) => console.error("❌ Auto-decline error:", err));
+          // clear interval and run auto-decline
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
           }
-          onClose?.();
+          // do the decline (async)
+          autoDecline();
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(countdown);
-  }, [UserID, onClose]);
+    // cleanup
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+    // Intentionally don't include 'timer' in deps — we manage the timer inside setTimer
+    // Re-run this effect when leadsDetails changes so the timer resets for new leads.
+  }, [leadsDetails, UserID, onClose]);
 
   // Handle Accept
   const handleAccept = async () => {
+    // stop the timer if user accepts
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setTimer(0);
+
     if (!leadsDetails?.length) {
       alert("No pending leads found.");
       return;
@@ -85,7 +155,7 @@ const Popupcard = ({ onClose }) => {
     try {
       const response = await UpdateOrders({
         OrderID: order.OrderID,
-        Address: "",  
+        Address: "",
         Slot: "",
         Status: "Done",
         VendorPhone: UserID,
@@ -99,12 +169,10 @@ const Popupcard = ({ onClose }) => {
 
       try {
         await AcceptLeads(order.OrderID, UserID);
-        // alert("Order accepted successfully!");
       } catch (err) {
         console.error("❌ AcceptLeads Error:", err);
       }
       if (response === "Updated Successfully") {
-        // alert("Order updated successfully!");
         window.location.reload();
       } else {
         alert("Unexpected API response: " + response);
@@ -114,13 +182,22 @@ const Popupcard = ({ onClose }) => {
       alert("Something went wrong while updating order.");
     } finally {
       setLoading(false);
+      onClose?.();
     }
   };
 
-  // Handle Decline
+  // Handle Decline (manual)
   const handleDecline = async () => {
+    // stop the timer if user declines
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setTimer(0);
+
     if (!leadsDetails?.length) {
       alert("No pending leads found.");
+      onClose?.();
       return;
     }
 
@@ -146,7 +223,7 @@ const Popupcard = ({ onClose }) => {
     }
   };
 
-  // Animation Variants
+  // --- animation variants, UI content (unchanged) ---
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.95 },
     visible: { opacity: 1, scale: 1 },
@@ -159,7 +236,6 @@ const Popupcard = ({ onClose }) => {
     exit: { y: "100%", opacity: 0 },
   };
 
-  // Shared UI content
   const Content = (
     <>
       <div className="mb-6">
@@ -218,7 +294,6 @@ const Popupcard = ({ onClose }) => {
   return (
     <AnimatePresence>
       {isMobile ? (
-        // Mobile Bottom Sheet
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -240,7 +315,6 @@ const Popupcard = ({ onClose }) => {
           </motion.div>
         </motion.div>
       ) : (
-        // Desktop Modal
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

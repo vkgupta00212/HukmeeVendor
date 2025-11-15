@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import COLORS from "../core/constant"; // adjust path as needed
+import COLORS from "../core/constant"; // Adjust path as needed
 
 const TabBar = ({ onTabChange }) => {
   const [activeTab, setActiveTab] = useState("accepted");
@@ -15,38 +15,57 @@ const TabBar = ({ onTabChange }) => {
 
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
-    if (onTabChange) {
-      onTabChange(tabId);
-    }
+    onTabChange?.(tabId);
   };
 
   return (
-    <div className="relative mb-6 p-[3px]">
-      <div className="relative border-2 border-black rounded-xl bg-white shadow-md overflow-hidden">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="flex gap-5 p-5 bg-white rounded-lg"
-        >
-          {tabs.map((tab) => (
-            <motion.button
-              key={tab.id}
-              className={`flex-1 px-3 py-3 rounded-md text-sm font-semibold transition-all duration-300 ${
-                activeTab === tab.id
-                  ? `bg-gradient-to-r ${COLORS.primaryFrom} ${COLORS.primaryTo} ${COLORS.textWhite} shadow-sm`
-                  : `${COLORS.bgGray} ${COLORS.textGray} hover:bg-gradient-to-r ${COLORS.hoverFrom} ${COLORS.hoverTo} hover:${COLORS.textWhite}`
-              }`}
-              onClick={() => handleTabClick(tab.id)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              aria-label={`Select ${tab.label} tab`}
-            >
-              {tab.label}
-            </motion.button>
-          ))}
-        </motion.div>
+    <div className="relative mb-8 px-2 sm:px-0">
+      {/* Glassmorphic Container */}
+      <div className="relative backdrop-blur-xl bg-white/80 border border-white/30 rounded-2xl shadow-lg p-2 overflow-hidden">
+        {/* Scrollable Tab Container */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar scroll-smooth">
+          {tabs.map((tab, index) => {
+            const isActive = activeTab === tab.id;
+
+            return (
+              <motion.button
+                key={tab.id}
+                onClick={() => handleTabClick(tab.id)}
+                className={`relative flex-shrink-0 px-5 py-3 rounded-xl text-sm font-medium transition-all duration-300 whitespace-nowrap
+                  ${
+                    isActive
+                      ? "text-white shadow-lg"
+                      : "text-gray-600 hover:text-gray-800"
+                  }`}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                aria-label={`Select ${tab.label} tab`}
+                style={{ zIndex: 10 }}
+              >
+                {/* Active Pill Background */}
+                {isActive && (
+                  <motion.div
+                    layoutId="activeTabPill"
+                    className={`absolute inset-0 rounded-xl bg-gradient-to-r ${COLORS.primaryFrom} ${COLORS.primaryTo}`}
+                    initial={false}
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 30,
+                    }}
+                  />
+                )}
+
+                {/* Tab Label */}
+                <span className="relative z-10">{tab.label}</span>
+              </motion.button>
+            );
+          })}
+        </div>
       </div>
+
+      {/* Optional: Subtle Bottom Glow */}
+      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-32 h-8 bg-gradient-to-t from-orange-300/20 to-transparent blur-3xl pointer-events-none" />
     </div>
   );
 };

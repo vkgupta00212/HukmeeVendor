@@ -7,6 +7,7 @@ import {
   FaTimes,
   FaEllipsisV,
 } from "react-icons/fa";
+import { IoMdLogOut } from "react-icons/io";
 import PersonalDetails from "./personalDetailsh.jsx";
 import GetUser from "../../backend/authentication/getuser.js";
 import TermsPage from "./terms&condition.jsx";
@@ -55,6 +56,7 @@ const UserProfile = () => {
   const navigate = useNavigate();
   const { width } = useWindowSize();
   const isMobile = width < 640;
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Prevent background scrolling when modals are open
   useEffect(() => {
@@ -181,6 +183,14 @@ const UserProfile = () => {
     localStorage.removeItem("isLoggedIn");
     setShowMenu(false);
     navigate("/");
+  };
+
+  const handleLog = () => {
+    // localStorage.removeItem("isLoggedIn");
+    // localStorage.removeItem("userPhone");
+    // setIsLoggedIn(false);
+    // navigate("/");
+    setShowLogoutModal(true);
   };
 
   const handleLoginClick = () => {
@@ -499,53 +509,6 @@ const UserProfile = () => {
             <div className={`w-20 h-1 bg-[#FA7D09] rounded-full mt-2`} />{" "}
             {/* No matching color in COLORS, using fallback */}
           </div>
-          {isMobile && (
-            <div className="relative" ref={menuRef}>
-              <motion.button
-                onClick={() => setShowMenu(!showMenu)}
-                className={`p-2 rounded-full hover:${COLORS.bgGray} transition-colors`}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                aria-label="Toggle profile menu"
-              >
-                <FaEllipsisV className={`${COLORS.textMuted} text-lg`} />
-              </motion.button>
-              <AnimatePresence>
-                {showMenu && (
-                  <motion.div
-                    variants={menuVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="hidden"
-                    transition={{ duration: 0.2 }}
-                    className={`absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg ${COLORS.borderGray} z-50`}
-                  >
-                    <button
-                      onClick={handleLogout}
-                      className={`w-full text-left px-4 py-2 text-sm ${COLORS.textMuted} hover:bg-orange-50 hover:text-${COLORS.primaryMain} transition-colors`} // No exact match for hover colors, using fallback
-                      aria-label="Log out"
-                    >
-                      Logout
-                    </button>
-                    <button
-                      onClick={() => setShowMenu(false)}
-                      className={`w-full text-left px-4 py-2 text-sm ${COLORS.textMuted} hover:bg-orange-50 hover:text-${COLORS.primaryMain} transition-colors`} // No exact match for hover colors
-                      aria-label="Settings"
-                    >
-                      Settings
-                    </button>
-                    <button
-                      onClick={() => setShowMenu(false)}
-                      className={`w-full text-left px-4 py-2 text-sm ${COLORS.textMuted} hover:bg-orange-50 hover:text-${COLORS.primaryMain} transition-colors`} // No exact match for hover colors
-                      aria-label="Help"
-                    >
-                      Help
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
         </motion.div>
 
         <motion.div
@@ -589,18 +552,18 @@ const UserProfile = () => {
         </motion.div>
 
         {/* SECTIONS */}
-        <div className="space-y-4">
+        <div className="space-y-4 flex flex-col items-center justify-center">
           {sections.map((section) => (
             <motion.div
               key={section.id}
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.5, delay: section.id * 0.1 }}
-              className="bg-white rounded-xl shadow-md overflow-hidden"
+              className="bg-white rounded-xl shadow-md overflow-hidden w-full max-w-lg"
             >
               <motion.div
                 onClick={() => toggleSection(section.id)}
-                className={`p-4 sm:p-5 cursor-pointer flex items-center justify-between bg-gradient-to-r ${COLORS.primaryFrom} ${COLORS.primaryTo} ${COLORS.textWhite} transition-all duration-300 ${COLORS.hoverFrom} ${COLORS.hoverTo}`}
+                className={`p-4 sm:p-5 cursor-pointer flex items-center justify-between bg-gradient-to-r ${COLORS.primaryFrom} ${COLORS.primaryTo} ${COLORS.textWhite} transition-all duration-300 hover:from-[#E56A00] hover:to-[#C75A00]`}
                 whileHover={{ scale: 1.01 }}
                 aria-label={`Toggle ${section.title} section`}
               >
@@ -618,6 +581,7 @@ const UserProfile = () => {
                   )}
                 </motion.div>
               </motion.div>
+
               <AnimatePresence initial={false}>
                 {openSections[section.id] && (
                   <motion.div
@@ -627,7 +591,7 @@ const UserProfile = () => {
                     animate="visible"
                     exit="exit"
                     transition={{ duration: 0.4, ease: "easeInOut" }}
-                    className={`${COLORS.bgGray} p-3`}
+                    className="p-3 bg-gray-50"
                   >
                     {section.Component}
                   </motion.div>
@@ -635,6 +599,22 @@ const UserProfile = () => {
               </AnimatePresence>
             </motion.div>
           ))}
+
+          <motion.button
+            onClick={handleLog}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className={`w-[150px] py-3 mt-6 text-center font-semibold rounded-xl 
+        bg-gradient-to-r ${COLORS.primaryFrom} ${COLORS.primaryTo} ${COLORS.textWhite} 
+        hover:from-[#E56A00] hover:to-[#C75A00] 
+        active:scale-95 transition-all duration-300`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <IoMdLogOut size={25} />
+              <span>Logout</span>
+            </div>
+          </motion.button>
         </div>
 
         <AnimatePresence>
@@ -776,6 +756,54 @@ const UserProfile = () => {
               </motion.div>
             </motion.div>
           )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {" "}
+          {showLogoutModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
+            >
+              {" "}
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="bg-white p-6 rounded-2xl shadow-2xl w-[90%] max-w-sm text-center"
+              >
+                {" "}
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  {" "}
+                  Are you sure you want to logout?{" "}
+                </h3>{" "}
+                <div className="flex justify-center gap-4">
+                  {" "}
+                  <button
+                    onClick={() => {
+                      setShowLogoutModal(false);
+                      handleLogout();
+                    }}
+                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+                  >
+                    {" "}
+                    Logout{" "}
+                  </button>{" "}
+                  <button
+                    onClick={() => setShowLogoutModal(false)}
+                    className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                  >
+                    {" "}
+                    Cancel{" "}
+                  </button>{" "}
+                </div>{" "}
+              </motion.div>{" "}
+            </motion.div>
+          )}{" "}
         </AnimatePresence>
       </div>
     </div>
