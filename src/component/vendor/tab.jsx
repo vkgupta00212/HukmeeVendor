@@ -8,7 +8,6 @@ const TabBar = ({ onTabChange }) => {
   const tabs = [
     { id: "accepted", label: "Accepted" },
     { id: "onservice", label: "On Service" },
-    { id: "declined", label: "Declined" },
     { id: "completed", label: "Completed" },
     { id: "canceled", label: "Canceled" },
   ];
