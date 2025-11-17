@@ -25,10 +25,12 @@ const OnService = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showUpdateItem, setShowUpdateItem] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [videoType, setVideoType] = useState("Before");
   const [paymentOrderId, setPaymentOrderId] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState(null);
+  const [updateOrderId, setUpdateOrderId] = useState(null);
 
   const [uploadedBefore, setUploadedBefore] = useState({});
   const [uploadedAfter, setUploadedAfter] = useState({});
@@ -38,12 +40,12 @@ const OnService = () => {
 
   // Prevent scroll
   useEffect(() => {
-    const active = showVideoModal || showPaymentModal;
+    const active = showVideoModal || showPaymentModal || showUpdateItem;
     document.body.style.overflow = active ? "hidden" : "unset";
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [showVideoModal, showPaymentModal]);
+  }, [showVideoModal, showPaymentModal, showUpdateItem]);
 
   // Fetch Onservice orders
   useEffect(() => {
@@ -52,7 +54,7 @@ const OnService = () => {
       setIsLoading(true);
       try {
         const data = await GetOrders(UserID, "Onservice");
-        setOrders(data || []);
+        setOrders((data || []).slice().reverse());
       } catch (error) {
         console.error("Error fetching Onservice orders:", error);
         setOrders([]);
@@ -82,6 +84,8 @@ const OnService = () => {
       // 1. Update Order Status (PaymentMethod)
       const updateResponse = await UpdateOrderstatus({
         OrderID: orderId,
+        Price: "",
+        Quantity: "",
         Status: "Onservice",
         VendorPhone: UserID,
         BeforVideo: "",
@@ -115,6 +119,28 @@ const OnService = () => {
     }
   };
 
+  const handleUpdateItem = async (orderId) => {
+    try {
+      const updateResponse = await UpdateOrderstatus({
+        OrderID: orderId,
+        Price: "",
+        Quantity: "",
+        Status: "Pending1",
+        VendorPhone: UserID,
+        BeforVideo: "",
+        AfterVideo: "",
+        OTP: "",
+        PaymentMethod: "",
+      });
+      if (updateResponse) {
+        alert("successfully update");
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   // Open Video Modal
   const openVideoModal = (order, type) => {
     const otp = order?.OTP || order?.otp || order?._doc?.OTP || null;
@@ -128,6 +154,11 @@ const OnService = () => {
     setPaymentOrderId(orderId);
     setPaymentAmount(amount);
     setShowPaymentModal(true);
+  };
+
+  const openUpdateItem = (orderId) => {
+    setUpdateOrderId(orderId);
+    setShowUpdateItem(true);
   };
 
   return (
@@ -155,6 +186,7 @@ const OnService = () => {
                   index={index}
                   onVideoClick={openVideoModal}
                   onPayment={openPaymentModal}
+                  onUpdateItem={openUpdateItem}
                   uploadedBefore={uploadedBefore}
                   uploadedAfter={uploadedAfter}
                   onVideoUploaded={(orderId, type) => {
@@ -202,6 +234,14 @@ const OnService = () => {
         amount={paymentAmount}
         onConfirm={handlePaymentComplete}
       />
+
+      <UpdateModel
+        isOpen={showUpdateItem}
+        onClose={() => setShowUpdateItem(false)}
+        orderId={updateOrderId}
+        amount={paymentAmount}
+        onConfirm={handleUpdateItem}
+      />
     </div>
   );
 };
@@ -214,6 +254,7 @@ const OnServiceCard = ({
   index,
   onVideoClick,
   onPayment,
+  onUpdateItem,
   uploadedBefore,
   uploadedAfter,
   onVideoUploaded,
@@ -365,13 +406,23 @@ const OnServiceCard = ({
           )}
 
           {hasBefore && !hasPayment && (
-            <button
-              onClick={() => onPayment(order.OrderID, order.Price)}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-2.5 rounded-xl font-medium text-sm hover:shadow-md transition flex items-center justify-center gap-2"
-            >
-              <IndianRupee size={16} />
-              Confirm Payment
-            </button>
+            <>
+              <div className="flex flex-row justify-between">
+                <button
+                  onClick={() => onUpdateItem(order.OrderID)}
+                  className="bg-gradient-to-r from-orange-500 to-gray-600 text-white p-2.5 rounded-xl font-medium text-sm hover:shadow-md transition flex items-center justify-center gap-2 hover:cursor-pointer"
+                >
+                  Update items
+                </button>
+                <button
+                  onClick={() => onPayment(order.OrderID, order.Price)}
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-2.5 rounded-xl font-medium text-sm hover:shadow-md transition flex items-center justify-center gap-2 hover:cursor-pointer"
+                >
+                  <IndianRupee size={16} />
+                  Confirm Payment
+                </button>
+              </div>
+            </>
           )}
 
           {hasBefore && hasPayment && !hasAfter && (
@@ -506,6 +557,7 @@ const PaymentModal = ({ isOpen, onClose, orderId, amount, onConfirm }) => {
               <button
                 onClick={() => {
                   onConfirm(orderId, amount, "Cash");
+                  updateWalletBalance(amount);
                   onClose();
                 }}
                 className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-2.5 rounded-xl font-medium hover:shadow-md transition"
@@ -520,6 +572,65 @@ const PaymentModal = ({ isOpen, onClose, orderId, amount, onConfirm }) => {
                 className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-2.5 rounded-xl font-medium hover:shadow-md transition"
               >
                 Online
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+const UpdateModel = ({ isOpen, onClose, orderId, amount, onConfirm }) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={onClose}
+              className="absolute top-3 right-3 text-gray-500 hover:text-red-600 transition"
+            >
+              <X size={20} />
+            </button>
+
+            {/* <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <IndianRupee className="text-blue-600" size={32} />
+            </div> */}
+
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Are you sure you want to update item ?
+            </h3>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => {
+                  onConfirm(orderId);
+                  onClose();
+                }}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-2.5 rounded-xl font-medium hover:shadow-md transition"
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => {
+                  onClose();
+                }}
+                className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-2.5 rounded-xl font-medium hover:shadow-md transition"
+              >
+                No
               </button>
             </div>
           </motion.div>

@@ -2,12 +2,12 @@ import axios from "axios";
 
 const UpdateOrder = async ({
   OrderID,
+  Price,
+  Quantity,
   UserID,
   OrderType,
   ItemImages = "",
   ItemName,
-  Price,
-  Quantity,
   Address = "",
   Slot = "",
   SlotDatetime = "",
@@ -17,12 +17,12 @@ const UpdateOrder = async ({
   const formData = new URLSearchParams();
   formData.append("token", "SWNCMPMSREMXAMCKALVAALI");
   formData.append("OrderID", OrderID);
+  formData.append("Price", Price);
+  formData.append("Quantity", Quantity);
   formData.append("UserID", UserID);
   formData.append("OrderType", OrderType);
   formData.append("ItemImages", ItemImages);
   formData.append("ItemName", ItemName);
-  formData.append("Price", Price);
-  formData.append("Quantity", Quantity);
   formData.append("Address", Address);
   formData.append("Slot", Slot);
   formData.append("SlotDatetime", SlotDatetime);

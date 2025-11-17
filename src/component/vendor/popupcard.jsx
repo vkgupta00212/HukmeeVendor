@@ -155,6 +155,8 @@ const Popupcard = ({ onClose }) => {
     try {
       const response = await UpdateOrders({
         OrderID: order.OrderID,
+        Price: "",
+        Quantity: "",
         Address: "",
         Slot: "",
         Status: "Done",

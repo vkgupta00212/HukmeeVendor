@@ -2,6 +2,8 @@ import axios from "axios";
 
 const UpdateOrders = async ({
   OrderID,
+  Price,
+  Quantity,
   Address = "",
   Slot = "",
   Status,
@@ -15,6 +17,8 @@ const UpdateOrders = async ({
   const params = new URLSearchParams();
   params.append("token", "SWNCMPMSREMXAMCKALVAALI");
   params.append("OrderID", OrderID);
+  params.append("Price", Price);
+  params.append("Quantity", Quantity);
   params.append("Address", Address);
   params.append("Slot", Slot);
   params.append("Status", Status);

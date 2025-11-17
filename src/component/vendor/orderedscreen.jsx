@@ -40,9 +40,12 @@ const AcceptedScreen = () => {
     const fetchOrders = async () => {
       if (!UserID) return;
       setIsLoading(true);
+
       try {
         const data = await GetOrders(UserID, "Done");
-        setOrders(data || []);
+
+        // Reverse the order here
+        setOrders((data || []).slice().reverse());
       } catch (error) {
         console.error("Error fetching orders:", error);
         setOrders([]);
@@ -97,6 +100,8 @@ const AcceptedScreen = () => {
     try {
       await UpdateOrderstatus({
         OrderID: selectedOrder.OrderID,
+        Price: "",
+        Quantity: "",
         Status: "Onservice",
         VendorPhone: UserID,
         BeforVideo: "",

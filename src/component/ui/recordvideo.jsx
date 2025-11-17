@@ -170,44 +170,63 @@ const RecordVideo = ({
 
   // Upload Video
   const handleUpload = async () => {
-    if (!chunks.length) return alert("No video to upload!");
+    if (!chunks.length) {
+      alert("No video to upload!");
+      return;
+    }
 
     setIsUploading(true);
     setUploadProgress(0);
 
     try {
+      // Convert recorded chunks to blob
       const blob = new Blob(chunks, { type: "video/webm" });
-      const base64String = await blobToBase64(blob);
 
-      const payload = {
-        OrderID,
-        Status,
-        VendorPhone,
-        BeforVideo: type === "Before" ? base64String : "",
-        AfterVideo: type === "After" ? base64String : "",
-        OTP,
-        PaymentMethod,
+      // Convert blob → base64 (simple)
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+
+      reader.onloadend = async () => {
+        const base64String = reader.result.split(",")[1]; // get only base64 part
+        setUploadProgress(100);
+
+        // Make request
+        const payload = {
+          OrderID,
+          Price: "",
+          Quantity: "",
+          Address: "",
+          Slot: "",
+          Status,
+          VendorPhone,
+          BeforVideo: type === "Before" ? base64String : "",
+          AfterVideo: type === "After" ? base64String : "",
+          OTP,
+          PaymentMethod,
+        };
+
+        const response = await UpdateOrders(payload);
+        console.log("Upload Response:", response);
+
+        // If AFTER video, mark service completed
+        if (type === "After") {
+          await UpdateOrders({ OrderID, Status: "Completed", VendorPhone });
+          alert("Service completed!");
+          window.location.reload();
+          return;
+        }
+
+        alert(`${type} video uploaded successfully!`);
+        onUploaded?.(OrderID);
+        onClose?.();
+
+        setIsUploading(false);
+        setUploadProgress(0);
       };
-
-      const response = await UpdateOrders(payload);
-      console.log("Upload Response:", response);
-
-      if (type === "After") {
-        const completePayload = { OrderID, Status: "Completed", VendorPhone };
-        await UpdateOrders(completePayload);
-        alert("Service completed!");
-        window.location.reload();
-      }
-
-      alert(`${type} video uploaded successfully!`);
-      onUploaded?.(OrderID);
-      onClose?.();
-    } catch (err) {
-      console.error("Upload failed:", err);
+    } catch (error) {
+      console.error("Upload failed:", error);
       alert("Upload failed. Please try again.");
-    } finally {
       setIsUploading(false);
-      setUploadProgress(0);
     }
   };
 
