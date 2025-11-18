@@ -16,6 +16,7 @@ import PrivacyAndPolicy from "./privacy&policy.jsx";
 import { useNavigate } from "react-router-dom";
 import LoginCard from "./loginCard.jsx";
 import OtpVerification from "./otpverification.jsx";
+import TransactionHistory from "./transactions.jsx";
 import UpdateVendor from "../../backend/authentication/updatevendor.js";
 import COLORS from "../core/constant";
 
@@ -297,9 +298,10 @@ const UserProfile = () => {
 
   const sections = [
     { id: 1, title: "Personal Details", Component: <PersonalDetails /> },
-    { id: 2, title: "About Us", Component: <AboutUs /> },
-    { id: 3, title: "Terms & Conditions", Component: <TermsPage /> },
-    { id: 4, title: "Privacy Policy", Component: <PrivacyAndPolicy /> },
+    { id: 2, title: "Wallet & Transaction", Component: <TransactionHistory /> },
+    { id: 3, title: "About Us", Component: <AboutUs /> },
+    { id: 4, title: "Terms & Conditions", Component: <TermsPage /> },
+    { id: 5, title: "Privacy Policy", Component: <PrivacyAndPolicy /> },
   ];
 
   // Animation variants
