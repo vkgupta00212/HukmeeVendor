@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 const OnService = () => {
-  const [orders, setOrders] = useState([]);
+  const [groupedOrders, setGroupedOrders] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -54,10 +54,48 @@ const OnService = () => {
       setIsLoading(true);
       try {
         const data = await GetOrders(UserID, "Onservice");
-        setOrders((data || []).slice().reverse());
+        const rawOrders = (data || []).reverse();
+
+        const grouped = {};
+
+        rawOrders.forEach((order) => {
+          const id = order.OrderID;
+
+          // First time seeing this OrderID?
+          if (!grouped[id]) {
+            grouped[id] = {
+              OrderID: id,
+              UserID: order.UserID,
+              items: [],
+              totalPrice: 0,
+              BeforVideo: order.BeforVideo || "",
+              AfterVideo: order.AfterVideo || "",
+              PaymentMethod: order.PaymentMethod || "",
+              OTP: order.OTP || order.otp || "",
+            };
+          }
+
+          // Add this item to the order
+          grouped[id].items.push({
+            name: order.ItemName,
+            price: parseFloat(order.Price),
+            quantity: parseInt(order.Quantity) || 1,
+          });
+
+          // Add to total price
+          grouped[id].totalPrice +=
+            parseFloat(order.Price) * (parseInt(order.Quantity) || 1);
+
+          // Keep the latest video/payment status
+          if (order.BeforVideo) grouped[id].BeforVideo = order.BeforVideo;
+          if (order.AfterVideo) grouped[id].AfterVideo = order.AfterVideo;
+          if (order.PaymentMethod)
+            grouped[id].PaymentMethod = order.PaymentMethod;
+        });
+
+        setGroupedOrders(grouped);
       } catch (error) {
-        console.error("Error fetching Onservice orders:", error);
-        setOrders([]);
+        console.error(error);
       } finally {
         setIsLoading(false);
       }
@@ -104,7 +142,9 @@ const OnService = () => {
         );
         if (inserted) {
           alert(`Payment via ${mode} successful! TXN: ${transactionId}`);
-          updateWalletBalance(amount);
+          if (mode === "Cash") {
+            updateWalletBalance(amount);
+          }
         } else {
           alert("Payment recorded, but transaction log failed.");
         }
@@ -174,13 +214,13 @@ const OnService = () => {
 
         {isLoading ? (
           <LoadingSkeleton />
-        ) : orders.length === 0 ? (
+        ) : groupedOrders.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <AnimatePresence>
-              {orders.map((order, index) => (
-                <OnServiceCard
+              {Object.values(groupedOrders).map((order, index) => (
+                <GroupedOrderCard
                   key={order.OrderID}
                   order={order}
                   index={index}
@@ -249,7 +289,7 @@ const OnService = () => {
 // ==========================
 // OnService Card
 // ==========================
-const OnServiceCard = ({
+const GroupedOrderCard = ({
   order,
   index,
   onVideoClick,
@@ -257,191 +297,158 @@ const OnServiceCard = ({
   onUpdateItem,
   uploadedBefore,
   uploadedAfter,
-  onVideoUploaded,
 }) => {
-  const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-  };
-
   const hasBefore = !!order.BeforVideo || uploadedBefore[order.OrderID];
   const hasPayment = !!order.PaymentMethod;
   const hasAfter = !!order.AfterVideo || uploadedAfter[order.OrderID];
 
   return (
     <motion.div
-      variants={cardVariants}
-      initial="hidden"
-      animate="visible"
-      exit="hidden"
-      transition={{ delay: index * 0.1 }}
-      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-2xl shadow-lg p-5 border"
     >
-      <div className="p-5">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className="font-bold text-[14px] text-gray-800 flex items-center gap-2">
-              <Package size={18} />#{order.OrderID}
-            </h3>
-            <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-              <User size={14} />
-              {order.UserID}
-            </p>
-          </div>
-          <span className="px-3 py-1 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700 flex items-center gap-1">
-            <Clock size={14} />
-            On Service
-          </span>
-        </div>
+      <div className="flex justify-between items-start mb-3">
+        <h3 className="font-bold text-lg">#{order.OrderID}</h3>
+        <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+          {order.items.length} items
+        </span>
+      </div>
 
-        {/* Details */}
-        <div className="space-y-2 text-sm mb-4">
-          <div className="flex justify-between">
-            <span className="text-gray-600 flex items-center gap-1">
-              <ShoppingBag size={14} />
-              Service
-            </span>
-            <span className="font-medium">{order.ItemName}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Type</span>
-            <span className="font-medium capitalize">{order.OrderType}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600 flex items-center gap-1">
-              <IndianRupee size={14} />
-              Amount
-            </span>
-            <span className="font-semibold text-blue-600">₹{order.Price}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Qty</span>
-            <span className="font-medium">{order.Quantity}</span>
-          </div>
-        </div>
+      <p className="text-sm text-gray-600 mb-3">Customer: {order.UserID}</p>
 
-        {/* Progress Steps */}
-        <div className="flex items-center justify-between text-xs mb-5">
+      {/* List of Items */}
+      <div className="bg-gray-50 rounded-lg p-3 mb-4">
+        {order.items.map((item, i) => (
+          <div key={i} className="flex justify-between text-sm py-1">
+            <span>
+              {item.name} × {item.quantity}
+            </span>
+            <span>₹{item.price * item.quantity}</span>
+          </div>
+        ))}
+        <div className="border-t mt-2 pt-2 font-bold text-lg flex justify-between">
+          <span>Total</span>
+          <span className="text-blue-600">₹{order.totalPrice}</span>
+        </div>
+      </div>
+
+      {/* Progress Icons */}
+      <div className="flex items-center justify-between text-xs mb-5">
+        <div
+          className={`flex flex-col items-center ${
+            hasBefore ? "text-green-600" : "text-gray-400"
+          }`}
+        >
           <div
-            className={`flex flex-col items-center ${
-              hasBefore ? "text-green-600" : "text-gray-400"
+            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+              hasBefore ? "bg-green-100 border-green-600" : "border-gray-300"
             }`}
           >
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                hasBefore ? "bg-green-100 border-green-600" : "border-gray-300"
-              }`}
-            >
-              {hasBefore ? <CheckCircle size={16} /> : <Camera size={16} />}
-            </div>
-            <span className="mt-1">Before</span>
+            {hasBefore ? <CheckCircle size={16} /> : <Camera size={16} />}
           </div>
-          <div className="flex-1 h-1 bg-gray-200 mx-2 relative">
-            <div
-              className={`absolute top-0 left-0 h-full transition-all duration-500 ${
-                hasPayment
-                  ? "w-full bg-green-500"
-                  : hasBefore
-                  ? "w-1/2 bg-blue-500"
-                  : "w-0"
-              }`}
-            />
-          </div>
+          <span className="mt-1">Before</span>
+        </div>
+        <div className="flex-1 h-1 bg-gray-200 mx-2 relative">
           <div
-            className={`flex flex-col items-center ${
-              hasPayment ? "text-green-600" : "text-gray-400"
+            className={`absolute top-0 left-0 h-full transition-all duration-500 ${
+              hasPayment
+                ? "w-full bg-green-500"
+                : hasBefore
+                ? "w-1/2 bg-blue-500"
+                : "w-0"
+            }`}
+          />
+        </div>
+        <div
+          className={`flex flex-col items-center ${
+            hasPayment ? "text-green-600" : "text-gray-400"
+          }`}
+        >
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+              hasPayment ? "bg-green-100 border-green-600" : "border-gray-300"
             }`}
           >
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                hasPayment ? "bg-green-100 border-green-600" : "border-gray-300"
-              }`}
-            >
-              {hasPayment ? (
-                <CheckCircle size={16} />
-              ) : (
+            {hasPayment ? <CheckCircle size={16} /> : <IndianRupee size={16} />}
+          </div>
+          <span className="mt-1">Payment</span>
+        </div>
+        <div className="flex-1 h-1 bg-gray-200 mx-2 relative">
+          <div
+            className={`absolute top-0 left-0 h-full transition-all duration-500 ${
+              hasAfter
+                ? "w-full bg-green-500"
+                : hasPayment
+                ? "w-1/2 bg-blue-500"
+                : "w-0"
+            }`}
+          />
+        </div>
+        <div
+          className={`flex flex-col items-center ${
+            hasAfter ? "text-green-600" : "text-gray-400"
+          }`}
+        >
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+              hasAfter ? "bg-green-100 border-green-600" : "border-gray-300"
+            }`}
+          >
+            {hasAfter ? <CheckCircle size={16} /> : <Video size={16} />}
+          </div>
+          <span className="mt-1">After</span>
+        </div>
+      </div>
+
+      {/* Buttons */}
+      <div className="grid grid-cols-1 gap-2">
+        {!hasBefore && (
+          <button
+            onClick={() => onVideoClick(order, "Before")}
+            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-2.5 rounded-xl font-medium text-sm hover:shadow-md transition flex items-center justify-center gap-2"
+          >
+            <Camera size={16} />
+            Record Before Video
+          </button>
+        )}
+
+        {hasBefore && !hasPayment && (
+          <>
+            <div className="flex flex-row justify-between">
+              <button
+                onClick={() => onUpdateItem(order.OrderID)}
+                className="bg-gradient-to-r from-orange-500 to-gray-600 text-white p-2.5 rounded-xl font-medium text-sm hover:shadow-md transition flex items-center justify-center gap-2 hover:cursor-pointer"
+              >
+                Update items
+              </button>
+              <button
+                onClick={() => onPayment(order.OrderID, order.totalPrice)}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-2.5 rounded-xl font-medium text-sm hover:shadow-md transition flex items-center justify-center gap-2 hover:cursor-pointer"
+              >
                 <IndianRupee size={16} />
-              )}
+                Confirm Payment
+              </button>
             </div>
-            <span className="mt-1">Payment</span>
-          </div>
-          <div className="flex-1 h-1 bg-gray-200 mx-2 relative">
-            <div
-              className={`absolute top-0 left-0 h-full transition-all duration-500 ${
-                hasAfter
-                  ? "w-full bg-green-500"
-                  : hasPayment
-                  ? "w-1/2 bg-blue-500"
-                  : "w-0"
-              }`}
-            />
-          </div>
-          <div
-            className={`flex flex-col items-center ${
-              hasAfter ? "text-green-600" : "text-gray-400"
-            }`}
+          </>
+        )}
+
+        {hasBefore && hasPayment && !hasAfter && (
+          <button
+            onClick={() => onVideoClick(order, "After")}
+            className="bg-gradient-to-r from-purple-500 to-pink-600 text-white py-2.5 rounded-xl font-medium text-sm hover:shadow-md transition flex items-center justify-center gap-2"
           >
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                hasAfter ? "bg-green-100 border-green-600" : "border-gray-300"
-              }`}
-            >
-              {hasAfter ? <CheckCircle size={16} /> : <Video size={16} />}
-            </div>
-            <span className="mt-1">After</span>
+            <Video size={16} />
+            Record After Video
+          </button>
+        )}
+
+        {hasAfter && (
+          <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-2.5 rounded-xl font-medium text-sm text-center flex items-center justify-center gap-2">
+            <CheckCircle size={16} />
+            Service Complete
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="grid grid-cols-1 gap-2">
-          {!hasBefore && (
-            <button
-              onClick={() => onVideoClick(order, "Before")}
-              className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-2.5 rounded-xl font-medium text-sm hover:shadow-md transition flex items-center justify-center gap-2"
-            >
-              <Camera size={16} />
-              Record Before Video
-            </button>
-          )}
-
-          {hasBefore && !hasPayment && (
-            <>
-              <div className="flex flex-row justify-between">
-                <button
-                  onClick={() => onUpdateItem(order.OrderID)}
-                  className="bg-gradient-to-r from-orange-500 to-gray-600 text-white p-2.5 rounded-xl font-medium text-sm hover:shadow-md transition flex items-center justify-center gap-2 hover:cursor-pointer"
-                >
-                  Update items
-                </button>
-                <button
-                  onClick={() => onPayment(order.OrderID, order.Price)}
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-2.5 rounded-xl font-medium text-sm hover:shadow-md transition flex items-center justify-center gap-2 hover:cursor-pointer"
-                >
-                  <IndianRupee size={16} />
-                  Confirm Payment
-                </button>
-              </div>
-            </>
-          )}
-
-          {hasBefore && hasPayment && !hasAfter && (
-            <button
-              onClick={() => onVideoClick(order, "After")}
-              className="bg-gradient-to-r from-purple-500 to-pink-600 text-white py-2.5 rounded-xl font-medium text-sm hover:shadow-md transition flex items-center justify-center gap-2"
-            >
-              <Video size={16} />
-              Record After Video
-            </button>
-          )}
-
-          {hasAfter && (
-            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-2.5 rounded-xl font-medium text-sm text-center flex items-center justify-center gap-2">
-              <CheckCircle size={16} />
-              Service Complete
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </motion.div>
   );

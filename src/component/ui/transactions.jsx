@@ -84,73 +84,80 @@ const TransactionHistory = () => {
         </motion.div>
 
         {/* Title */}
-        <div className="flex items-center gap-3">
-          <History size={26} className="text-orange-500" />
-          <h2 className="text-xl font-bold text-gray-800">Transactions</h2>
-        </div>
-
-        {/* Transaction List */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          {isLoading ? (
-            <div className="p-10 text-center">
-              <div className="inline-block animate-spin rounded-full h-10 w-10 border-3 border-orange-500 border-t-transparent"></div>
-            </div>
-          ) : transactions.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
-              <History size={48} className="mx-auto text-gray-300 mb-3" />
-              <p className="font-medium">No transactions yet</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {transactions.map((txn, i) => (
-                <motion.div
-                  key={txn.id || txn.Transactionid || i}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="p-5 flex items-center justify-between hover:bg-gray-50 transition"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <IndianRupee size={18} className="text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        #{txn.Transactionid || txn.id || "—"}
-                      </p>
-                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
-                        <span className="flex items-center gap-1">
-                          <Calendar size={12} />
-                          {formatDate(txn.DateTime || txn.DateTim)}
-                        </span>
-                        {txn.Phone && (
-                          <span className="flex items-center gap-1">
-                            <Phone size={12} />
-                            {txn.Phone}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+          {/* Header inside the card */}
 
-                  <div className="text-right">
-                    <p className="font-bold text-green-600 text-lg">
-                      +₹
-                      {parseFloat(txn.TransactionAmt || 0).toLocaleString(
-                        "en-IN"
-                      )}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
+          {/* Scrollable List */}
+          <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            {isLoading ? (
+              <div className="p-10 text-center">
+                <div className="inline-block animate-spin rounded-full h-10 w-10 border-3 border-orange-500 border-t-transparent"></div>
+              </div>
+            ) : transactions.length === 0 ? (
+              <div className="p-12 text-center text-gray-500">
+                <History size={48} className="mx-auto text-gray-300 mb-3" />
+                <p className="font-medium">No transactions yet</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {transactions
+                  .slice() // copy array
+                  .reverse() // newest first
+                  .map((txn, i) => (
+                    <motion.div
+                      key={txn.id || txn.Transactionid || i}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="p-5 flex items-center justify-between hover:bg-gray-50 transition"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                          <IndianRupee size={18} className="text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            #{txn.Transactionid || txn.id || "—"}
+                          </p>
+                          <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                            <span className="flex items-center gap-1">
+                              <Calendar size={12} />
+                              {formatDate(txn.DateTime || txn.DateTim)}
+                            </span>
+                            {txn.Phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone size={12} />
+                                {txn.Phone}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <p className="font-bold text-green-600 text-lg">
+                          +₹
+                          {parseFloat(txn.TransactionAmt || 0).toLocaleString(
+                            "en-IN"
+                          )}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
+              </div>
+            )}
+          </div>
+
+          {/* Footer hint */}
+          {transactions.length > 5 && (
+            <div className="px-5 py-3 bg-gray-50 text-center">
+              <p className="text-xs text-gray-500">
+                Showing last {transactions.length} transactions • Scroll up for
+                older
+              </p>
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <p className="text-center text-xs text-gray-500">
-          All transactions are secure
-        </p>
       </div>
     </div>
   );
